@@ -1,2 +1,0 @@
-# Scotland-Yard
-CourseWork1
