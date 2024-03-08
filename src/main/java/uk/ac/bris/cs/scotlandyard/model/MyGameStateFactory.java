@@ -153,23 +153,29 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			return winner;
 		}
 
+
+		public ImmutableSet<Move> getAvailablePieceMoves(Piece p){
+			ImmutableSet.Builder<Move> moveSet = ImmutableSet.builder();
+			if (p.isMrX()) {
+				moveSet.addAll(makeSingleMoves(setup, detectives, mrX, mrX.location()));
+				if (mrX.tickets().get(ScotlandYard.Ticket.DOUBLE) > 0 && log.size() + 1 != setup.moves.size()) {
+					moveSet.addAll(makeDoubleMoves(setup, detectives, mrX, mrX.location()));
+				}
+			} else {
+				for (Player detective : detectives) {
+					if (detective.piece() == p) {
+						moveSet.addAll(makeSingleMoves(setup, detectives, detective, detective.location()));
+					}
+				}
+			}
+			return moveSet.build();
+		}
 		@Nonnull
 		@Override
 		public ImmutableSet<Move> getAvailableMoves() {
 			ImmutableSet.Builder<Move> moveSet = ImmutableSet.builder();
 			for (Piece piece : remaining) {
-				if (piece.isMrX()) {
-					moveSet.addAll(makeSingleMoves(setup, detectives, mrX, mrX.location()));
-					if (mrX.tickets().get(ScotlandYard.Ticket.DOUBLE) > 0 && log.size() + 1 != setup.moves.size()) {
-						moveSet.addAll(makeDoubleMoves(setup, detectives, mrX, mrX.location()));
-					}
-				} else {
-					for (Player detective : detectives) {
-						if (detective.piece() == piece) {
-							moveSet.addAll(makeSingleMoves(setup, detectives, detective, detective.location()));
-						}
-					}
-				}
+				moveSet.addAll(getAvailablePieceMoves(piece));
 			}
 			moves = moveSet.build();
 			if (winner != null && !winner.isEmpty()) return ImmutableSet.of();
@@ -219,30 +225,23 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			detectives = newDetectives.build();
 			log = newLog.build();
 			ImmutableSet.Builder<Piece> NewRemainingBuilder = ImmutableSet.builder();
-			for (Piece p : remaining) {
-				System.out.println(getAvailableMoves().toString() + "123");
-				if (p.isMrX()) {
-					for (Player d : detectives) {NewRemainingBuilder.add(d.piece());}
-				} else {
-					 if (remaining.size() > 1) {
-						if (p != move.commencedBy()) NewRemainingBuilder.add(p);
+			if (remaining.contains(mrX.piece())) {
+				for(Player d : detectives){
+					if (!getAvailablePieceMoves(d.piece()).isEmpty()) NewRemainingBuilder.add(d.piece());
+				}
+			}else{
+				for (Piece p : remaining) {
+					if (!getAvailablePieceMoves(p).isEmpty()){
+						System.out.println(getAvailableMoves().toString() + "123");
+					if (remaining.size() > 1){
+							if (p != move.commencedBy()) NewRemainingBuilder.add(p);
 							// have rest rounds
-					} else NewRemainingBuilder.add(mrX.piece());
+						} else NewRemainingBuilder.add(mrX.piece());
+					}
+
 				}
-				remaining = NewRemainingBuilder.build();
-				if (getAvailableMoves().isEmpty()) {
-					remaining = ImmutableSet.of(mrX.piece());
-				}
-				//if (p.isMrX()) {
-				//	for (Player d : detectives) {NewRemainingBuilder.add(d.piece());}
-				// if (getAvailableMoves().isEmpty()){
-				//	NewRemainingBuilder.add(mrX.piece());
-				//} else if (remaining.size() > 1){
-				//	if (p != move.commencedBy()) NewRemainingBuilder.add(p);
-				//	// have rest rounds
-				//} else NewRemainingBuilder.add(mrX.piece());
-				// }
 			}
+			remaining = NewRemainingBuilder.build();
 			System.out.println(remaining.toString());
 			GameState AdvancedGameState = new MyGameState(setup, remaining, log, mrX, detectives);
 			return AdvancedGameState;
