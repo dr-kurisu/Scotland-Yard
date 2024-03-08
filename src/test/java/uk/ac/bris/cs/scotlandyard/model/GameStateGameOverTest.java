@@ -187,7 +187,8 @@ public class GameStateGameOverTest extends ParameterisedModelTestBase {
 		var blue = new Player(BLUE, makeTickets(1, 0, 0, 0, 0), 108);
 		GameState state = gameStateFactory.build(standard24MoveSetup(), mrX, blue);
 		state = state.advance(taxi(MRX, 86, 104));
-		state = state.advance(taxi(BLUE, 108, 105)); // blue uses his last move
+		state = state.advance(taxi(BLUE, 108, 105)); // blue uses his last
+			// move
 		assertGameIsOver(state);
 		assertThat(state.getWinner()).containsExactlyInAnyOrder(MRX);
 	}
