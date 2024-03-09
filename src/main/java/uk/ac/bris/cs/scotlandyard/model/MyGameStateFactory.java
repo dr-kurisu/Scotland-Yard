@@ -3,7 +3,6 @@ package uk.ac.bris.cs.scotlandyard.model;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nonnull;
-import javax.print.attribute.standard.Destination;
 
 import com.google.common.collect.ImmutableSet;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
@@ -232,7 +231,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}else{
 				for (Piece p : remaining) {
 					if (!getAvailablePieceMoves(p).isEmpty()){
-						System.out.println(getAvailableMoves().toString() + "123");
 					if (remaining.size() > 1){
 							if (p != move.commencedBy()) NewRemainingBuilder.add(p);
 							// have rest rounds
@@ -242,7 +240,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				}
 			}
 			remaining = NewRemainingBuilder.build();
-			System.out.println(remaining.toString());
 			GameState AdvancedGameState = new MyGameState(setup, remaining, log, mrX, detectives);
 			return AdvancedGameState;
 		}
