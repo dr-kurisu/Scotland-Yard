@@ -184,8 +184,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public GameState advance(Move move) {
-			if(!getAvailableMoves().contains(move)) throw new IllegalArgumentException(getAvailableMoves().toString());
-			//if(!getAvailableMoves().contains(move)) throw new IllegalArgumentException("Illegal move: "+move);
+			if(!getAvailableMoves().contains(move)) throw new IllegalArgumentException("Illegal move: "+move);
 			ImmutableList<Integer> destinations = move.accept(new Move.Visitor<ImmutableList<Integer>>() {
 				@Override
 				public ImmutableList<Integer> visit(Move.SingleMove move) {

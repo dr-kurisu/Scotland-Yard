@@ -69,13 +69,15 @@ public final class MyModelFactory implements Factory<Model> {
 			 * {@link uk.ac.bris.cs.scotlandyard.model.Board.GameState}
 			 */
 			public void chooseMove(@Nonnull Move move){
+				if (!state.getAvailableMoves().isEmpty()) state.advance(move);
 				if (state.getWinner().isEmpty()){
-					state.advance(move);
 					for (Observer observer : observers) {
+						System.out.println(observer + "moveMade");
 						observer.onModelChanged(getCurrentBoard(), Observer.Event.MOVE_MADE);
 					}
 				}else{
 					for (Observer observer : observers) {
+						System.out.println(observer + "gameOver");
 						observer.onModelChanged(getCurrentBoard(), Observer.Event.GAME_OVER);
 					}
 				}
