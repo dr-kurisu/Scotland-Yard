@@ -9,13 +9,16 @@ import uk.ac.bris.cs.scotlandyard.model.Piece;
 import java.util.*;
 
 public class StateCreator {
-    public static List<Board.GameState> BestMove(ImmutableValueGraph<Integer, Integer> graph, Board.GameState state, boolean type) {
-        if (type) return maxBestMoves(graph, state);
-        else return minBestMoves(graph, state);
+    public static List<Board.GameState> BestMove(ImmutableValueGraph<Integer, Integer> graph,
+                                                 Board.GameState state,
+                                                 ImmutableSet<Move> moves,
+                                                 Piece pieceNearest,
+                                                 boolean type) {
+        if (!type) return maxBestMoves(graph, state, moves);
+        else return minBestMoves(graph, state, pieceNearest);
     }
-    public static List<Board.GameState> maxBestMoves(ImmutableValueGraph<Integer, Integer> graph, Board.GameState state) {
+    public static List<Board.GameState> maxBestMoves(ImmutableValueGraph<Integer, Integer> graph, Board.GameState state, ImmutableSet<Move> moves) {
         // mrX choice one best move of each destination according to the ticket
-        var moves = state.getAvailableMoves();
         Map<Integer, Move> moveMap = new HashMap<>();
         Map<Integer, Float> costMap = new HashMap<>();
         for (Move move : moves) {
@@ -36,10 +39,10 @@ public class StateCreator {
         return states;
     }
 
-    public static List<Board.GameState> minBestMoves(ImmutableValueGraph<Integer, Integer> graph, Board.GameState state) {
+    public static List<Board.GameState> minBestMoves(ImmutableValueGraph<Integer, Integer> graph, Board.GameState state, Piece pieceNearest) {
         // except one detective (The Nearest)
         // Detectives choice one best move of each destination according to the ticket
-        Board.GameState tempState = moveAllExceptNearestPiece(graph, state);
+        Board.GameState tempState = moveAllExceptNearestPiece(graph, state, pieceNearest);
         var moves = tempState.getAvailableMoves();
         List<Board.GameState> states = new ArrayList<>();
         for (Move move : moves) {
@@ -50,13 +53,13 @@ public class StateCreator {
 
     public static Board.GameState moveAllExceptNearestPiece(
             ImmutableValueGraph<Integer, Integer> valueGraph,
-            Board.GameState state) {
+            Board.GameState state,
+            Piece pieceNearest) {
 
         Map<Piece, Integer> distanceMap = new HashMap<>();
         Map<Piece, Move> moveMap = new HashMap<>();
         var moves = state.getAvailableMoves();
         var mrXLocation = getMrXLocation(moves);
-        Piece pieceNearest = findClosestDetective(state, valueGraph, moves);
 
         for (Move move : moves) {
             Piece piece = move.commencedBy();
@@ -79,7 +82,7 @@ public class StateCreator {
         return tempState;
     }
 
-    public static Piece findClosestDetective(Board.GameState state,
+    public static Piece findNearestDetective(Board.GameState state,
                                              ImmutableValueGraph<Integer, Integer> graph,
                                              ImmutableSet<Move> moves)
     {

@@ -32,7 +32,7 @@ public class MyAi implements Ai {
 	private int counter = 1;  // counter for round number
 	@Nonnull @Override public String name() { return "Scottish ALPHA-GO"; }
 
-	public static int getMrxLocation(Board board){
+	public static int getMrxLocation(Board board) {
 		for (Move move : board.getAvailableMoves()){
 			if (move.commencedBy().isMrX()){ return move.source(); }
 		}
@@ -41,6 +41,7 @@ public class MyAi implements Ai {
 
 	public void createState(Board board){
 		var pieces = board.getPlayers();
+		detectives = new ArrayList<>(); // what a stupid bug
 		for (Piece piece : pieces) {
 			Board.TicketBoard tb = board.getPlayerTickets(piece).orElseThrow();
 			if (piece.isMrX()) {
@@ -63,21 +64,32 @@ public class MyAi implements Ai {
 		state = new MyGameStateFactory().build(board.getSetup(), mrX, ImmutableList.copyOf(detectives));
 	}
 
-
 	@Nonnull @Override public Move pickMove(
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
 		// returns a random move, replace with your own implementation
 		createState(board); // create new game state for each round
 		var moves = state.getAvailableMoves();
-		if (!isMrXTurn(moves)) { return null; }
+		// if (!isMrXTurn(moves)) { System.out.println("enter"); return null; }
 		createGameTree(1);
-		System.out.print(counter++ + " ");
-		System.out.println(tree.getLeaves().size());
+		//System.out.println("Size of currentLayer1: " + tree.getCurrentLayer().size());
+		tree.upPropagation();
+		System.out.println("Round: " + counter++);
+		//System.out.println("Size of Leaves: " + tree.getLeaves().size());
+		//System.out.println("First Layer Size: " + tree.getFirstLayer().size());
+		System.out.println(tree.getRoot().getScore().orElseThrow());
+		for (int i = 0; i < tree.getFirstLayer().size(); i++) {
+			GameNode node = tree.getFirstLayer().get(i);
+			if (node.getScore().orElseThrow() == tree.getRoot().getScore().orElseThrow()) {
+				return moves.asList().get(i);
+			}
+		}
+		System.out.println("maxScore: " + tree.getRoot().getScore().orElseThrow());
+		for (GameNode node: tree.getFirstLayer()) {
+			System.out.print(node.getScore().orElseThrow() + " ");
+		}
 
-		Random random = new Random();
-		int index = random.nextInt(tree.getFirstLayer().size());
-		return moves.asList().get(index);
+		throw new RuntimeException("Impossible");
 	}
 
 	public void createGameTree(int depth){
@@ -87,6 +99,4 @@ public class MyAi implements Ai {
 	public boolean isMrXTurn(ImmutableSet<Move> moves) {
 		return moves.asList().get(0).commencedBy().isMrX();
 	}
-
-
 }

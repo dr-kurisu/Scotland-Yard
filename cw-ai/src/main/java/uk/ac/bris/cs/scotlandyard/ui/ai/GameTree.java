@@ -12,27 +12,75 @@ import java.util.*;
 
 public class GameTree {
     private List<GameNode> leaves;
+    private GameNode root;
     private List<GameNode> firstLayer;
+    private List<GameNode> currentLayer;
     private ImmutableValueGraph<Integer, Integer> distanceGraph;
     GameTree(Board.GameState state, int depth){
         // MrX turn
         this.leaves = new ArrayList<>();
+        this.currentLayer = new ArrayList<>();
         this.distanceGraph = createValueGraph(state.getSetup().graph);
 
         // add first layer of node
-        var moves = state.getAvailableMoves();
-        for (Move move : moves) {
-            this.leaves.add(new GameNode(state.advance(move), true, null));
-        }
-        this.firstLayer = this.leaves;
+        this.root = new GameNode(state, false, null, distanceGraph);
+        this.currentLayer.addAll(root.addChildren(distanceGraph));
+        this.firstLayer = this.currentLayer;
+
         for (int i = 0; i < depth; i++) {
-            List<GameNode> newLeaves = new ArrayList<>();
-            for (GameNode node : this.leaves) {
-                newLeaves.addAll(node.addChildren(distanceGraph));
+            List<GameNode> nextLayer = new ArrayList<>();
+            for (GameNode node : this.currentLayer) {
+                if (node.winner.isEmpty()) {
+                    nextLayer.addAll(node.addChildren(distanceGraph));
+                }else {
+                    this.leaves.add(node);
+                }
             }
-            System.out.println("size1: " + this.leaves.size());
-            this.leaves = newLeaves;
-            System.out.println("size2: " + this.leaves.size());
+            this.currentLayer = nextLayer;
+        }
+        this.leaves.addAll(this.currentLayer);
+    }
+
+    // define here cos winner
+    public void calculateScore(GameNode node) {
+        if (node.winner.isEmpty()) {
+            int score = ScoreCalculator.getScore(distanceGraph, node.getState(), node.getMrXLocation(), node.getNearestLocation());
+            node.setScore(score);
+        }else {
+            if (node.winner.asList().get(0).isMrX()) {
+                node.setScore(999);
+            }else {
+                node.setScore(-999);
+            }
+        }
+    }
+    public void upPropagation() {
+        this.currentLayer = this.leaves;
+        for (GameNode node1 : currentLayer) {
+            calculateScore(node1);
+        }
+        while (!this.currentLayer.isEmpty()) {
+            List<GameNode> previousLayer = new ArrayList<>();
+            for (GameNode node : currentLayer) {
+                if (node.getParent() == null) continue;
+                previousLayer.add(node.getParent());
+                Optional<Integer> parentScore = node.getParent().getScore();
+                int score = node.getScore().orElseThrow();
+                if (parentScore.isEmpty()) {
+                    node.getParent().setScore(score);
+                } else {
+                    if (node.getType()) {
+                        if (score > parentScore.orElseThrow()) {
+                            node.getParent().setScore(score);
+                        }
+                    } else {
+                        if (score < parentScore.orElseThrow()) {
+                            node.getParent().setScore(score);
+                        }
+                    }
+                }
+            }
+            this.currentLayer = previousLayer;
         }
     }
     public ImmutableValueGraph<Integer, Integer> createValueGraph(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
@@ -56,4 +104,7 @@ public class GameTree {
     // getter
     public List<GameNode> getLeaves() { return this.leaves; }
     public List<GameNode> getFirstLayer() { return this.firstLayer; }
+    public List<GameNode> getCurrentLayer() { return this.currentLayer; }
+
+    public GameNode getRoot() { return this.root; }
 }
