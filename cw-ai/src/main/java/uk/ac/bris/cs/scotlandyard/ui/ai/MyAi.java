@@ -28,7 +28,7 @@ public class MyAi implements Ai {
 	private Player mrX;
 	private List<Player> detectives = new ArrayList<>();
 	private Board.GameState state;
-	private GameTree tree;
+	private Tree tree;
 	private int counter = 1;  // counter for round number
 	@Nonnull @Override public String name() { return "Scottish ALPHA-GO"; }
 
@@ -72,28 +72,28 @@ public class MyAi implements Ai {
 		var moves = state.getAvailableMoves();
 		if (moves.isEmpty()) { throw new RuntimeException("No available move"); }
 		// if (!isMrXTurn(moves)) { System.out.println("enter"); return null; }
-		createGameTree(3);
-		//System.out.println("Size of currentLayer1: " + tree.getCurrentLayer().size());
-		tree.upPropagation();
+		createTree(2, board);
+		System.out.println("Size of currentLayer1: " + tree.getCurrentLayer().size());
+		// tree.upPropagation();
 		System.out.println("Round: " + counter++);
-		System.out.println("maxScore: " + tree.getRoot().getScore().orElseThrow());
-		for (GameNode node: tree.getFirstLayer()) {
-			System.out.print(node.getScore().orElseThrow() + " ");
-		}
-		System.out.println();
+		//System.out.println("maxScore: " + tree.getRoot().getScore().orElseThrow());
+		//for (Node node: tree.getFirstLayer()) {
+		//	System.out.print(node.getScore().orElseThrow() + " ");
+		//}
+		//System.out.println();
 		//System.out.println("Size of Leaves: " + tree.getLeaves().size());
 		//System.out.println("First Layer Size: " + tree.getFirstLayer().size());
-		for (int i = 0; i < tree.getFirstLayer().size(); i++) {
-			GameNode node = tree.getFirstLayer().get(i);
-			if (node.getScore().orElseThrow().equals(tree.getRoot().getScore().orElseThrow())) {
-				return moves.asList().get(i);
-			}
-		}
+		//for (int i = 0; i < tree.getFirstLayer().size(); i++) {
+		//	Node node = tree.getFirstLayer().get(i);
+		//	if (node.getScore().orElseThrow().equals(tree.getRoot().getScore().orElseThrow())) {
+		//		return moves.asList().get(i);
+		//	}
+		//}
 		throw new RuntimeException("Impossible");
 	}
 
-	public void createGameTree(int depth){
-		tree = new GameTree(state, depth);
+	public void createTree(int depth, Board board){
+		tree = new Tree(state, depth, getMrxLocation(board));
 	}
 
 	public boolean isMrXTurn(ImmutableSet<Move> moves) {

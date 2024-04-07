@@ -10,20 +10,21 @@ import uk.ac.bris.cs.scotlandyard.model.ScotlandYard;
 
 import java.util.*;
 
+/*
 public class GameTree {
     private List<GameNode> leaves;
     private GameNode root;
     private List<GameNode> firstLayer;
     private List<GameNode> currentLayer;
     private ImmutableValueGraph<Integer, Integer> distanceGraph;
-    GameTree(Board.GameState state, int depth){
+    GameTree(Board.GameState state, int depth, int mrXLocation){
         // MrX turn
         this.leaves = new ArrayList<>();
         this.currentLayer = new ArrayList<>();
         this.distanceGraph = createValueGraph(state.getSetup().graph);
 
         // add first layer of node
-        this.root = new GameNode(state, false, null, distanceGraph);
+        this.root = new GameNode(state, false, null, mrXLocation, distanceGraph);
         this.currentLayer.addAll(root.addChildren(distanceGraph));
         this.firstLayer = this.currentLayer;
 
@@ -42,9 +43,9 @@ public class GameTree {
     }
 
     // define here cos winner
-    public void calculateScore(GameNode node) {
+    public void calculateScore(GameNode node, ScoreCalculator scores) {
         if (node.winner.isEmpty()) {
-            int score = ScoreCalculator.getScore(distanceGraph, node.getState(), node.getMrXLocation(), node.getNearestLocation());
+            System.out.println("mrX " + node.getMrXLocation() + "detective " + node.getNearestLocation());
             node.setScore(score);
         }else {
             if (node.winner.asList().get(0).isMrX()) {
@@ -57,6 +58,7 @@ public class GameTree {
     public void upPropagation() {
         // refer to Back Propagation
         this.currentLayer = this.leaves;
+        ScoreCalculator scores = new ScoreCalculator(distanceGraph, )
         for (GameNode node1 : currentLayer) {
             calculateScore(node1);
         }
@@ -109,3 +111,6 @@ public class GameTree {
 
     public GameNode getRoot() { return this.root; }
 }
+
+
+ */

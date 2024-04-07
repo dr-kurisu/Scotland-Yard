@@ -26,7 +26,7 @@ public class CostCalculator {
         return cost;
     }
     public static float maxCalculateCost(Board.GameState state, Move move) {
-        // calulate cost for mrX
+        // calulate cost of tickets for mrX
         var tickets = move.tickets();
         float cost = 0;
         Board.TicketBoard tb = state.getPlayerTickets(move.commencedBy()).orElseThrow();
@@ -38,9 +38,12 @@ public class CostCalculator {
         for (ScotlandYard.Ticket t : tickets){
             switch (t){
                 case BUS -> bus--;
-                case DOUBLE -> cost += 10;
+                case DOUBLE -> cost += 7;
                 case TAXI -> taxi--;
-                case SECRET -> cost += 5;
+                case SECRET -> {
+                    secret--;
+                    cost += 3;
+                }
                 case UNDERGROUND -> underground--;
             }
             // To make number of ticket distribute more uniformly
