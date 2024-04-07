@@ -70,25 +70,25 @@ public class MyAi implements Ai {
 		// returns a random move, replace with your own implementation
 		createState(board); // create new game state for each round
 		var moves = state.getAvailableMoves();
+		if (moves.isEmpty()) { throw new RuntimeException("No available move"); }
 		// if (!isMrXTurn(moves)) { System.out.println("enter"); return null; }
-		createGameTree(1);
+		createGameTree(3);
 		//System.out.println("Size of currentLayer1: " + tree.getCurrentLayer().size());
 		tree.upPropagation();
 		System.out.println("Round: " + counter++);
-		//System.out.println("Size of Leaves: " + tree.getLeaves().size());
-		//System.out.println("First Layer Size: " + tree.getFirstLayer().size());
-		System.out.println(tree.getRoot().getScore().orElseThrow());
-		for (int i = 0; i < tree.getFirstLayer().size(); i++) {
-			GameNode node = tree.getFirstLayer().get(i);
-			if (node.getScore().orElseThrow() == tree.getRoot().getScore().orElseThrow()) {
-				return moves.asList().get(i);
-			}
-		}
 		System.out.println("maxScore: " + tree.getRoot().getScore().orElseThrow());
 		for (GameNode node: tree.getFirstLayer()) {
 			System.out.print(node.getScore().orElseThrow() + " ");
 		}
-
+		System.out.println();
+		//System.out.println("Size of Leaves: " + tree.getLeaves().size());
+		//System.out.println("First Layer Size: " + tree.getFirstLayer().size());
+		for (int i = 0; i < tree.getFirstLayer().size(); i++) {
+			GameNode node = tree.getFirstLayer().get(i);
+			if (node.getScore().orElseThrow().equals(tree.getRoot().getScore().orElseThrow())) {
+				return moves.asList().get(i);
+			}
+		}
 		throw new RuntimeException("Impossible");
 	}
 

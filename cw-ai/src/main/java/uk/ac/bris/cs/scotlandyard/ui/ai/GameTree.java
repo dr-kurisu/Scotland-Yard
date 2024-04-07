@@ -55,6 +55,7 @@ public class GameTree {
         }
     }
     public void upPropagation() {
+        // refer to Back Propagation
         this.currentLayer = this.leaves;
         for (GameNode node1 : currentLayer) {
             calculateScore(node1);
