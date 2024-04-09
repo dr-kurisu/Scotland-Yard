@@ -5,10 +5,12 @@ import com.google.common.graph.ImmutableValueGraph;
 import com.google.common.graph.MutableValueGraph;
 import com.google.common.graph.ValueGraphBuilder;
 import uk.ac.bris.cs.scotlandyard.model.Board;
+import uk.ac.bris.cs.scotlandyard.model.Piece;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class Tree {
     private List<Node> leaves;
@@ -42,6 +44,42 @@ public class Tree {
         this.leaves.addAll(this.currentLayer);
     }
 
+    public void upPropagation() {
+        // refer to back propagation
+        // get score for leaves
+        for (Node node : this.leaves) {
+            Optional<Integer> nearestLocation = node.state.getDetectiveLocation((Piece.Detective) node.getNearestPiece());
+            if (nearestLocation.isEmpty()) System.out.println("nearest location is empty");
+            int score = ScoreCalculator.getScore(node.getDistances(), node.state, nearestLocation.orElseThrow(), node.getFreedom());
+            // System.out.println("score: " + score + " des: " + node.getMrXLocation());
+            node.setScore(score);
+        }
+        this.currentLayer = this.leaves;
+        while (!this.currentLayer.isEmpty()) {
+            List<Node> previousLayer = new ArrayList<>();
+            for (Node node : currentLayer) {
+                if (node.getParent() == null) continue;
+                previousLayer.add(node.getParent());
+                Optional<Integer> parentScore = node.getParent().getScore();
+                int score = node.getScore().orElseThrow();
+                if (parentScore.isEmpty()) {
+                    node.getParent().setScore(score);
+                } else {
+                    if (node.getType()) {
+                        if (score > parentScore.orElseThrow()) {
+                            node.getParent().setScore(score);
+                        }
+                    } else {
+                        if (score < parentScore.orElseThrow()) {
+                            node.getParent().setScore(score);
+                        }
+                    }
+                }
+            }
+            this.currentLayer = previousLayer;
+        }
+    }
+
     public ImmutableValueGraph<Integer, Integer> createValueGraph(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
         MutableValueGraph<Integer, Integer> boardValueGraph = ValueGraphBuilder.undirected().build();
 
@@ -51,9 +89,9 @@ public class Tree {
             // consider each adjacent nodes
             for (Integer destinationNode : graph.adjacentNodes(sourceNode)) {
                 // give value to each possible transport
-                for (ScotlandYard.Transport t : graph.edgeValueOrDefault(sourceNode, destinationNode, ImmutableSet.of())) {
-                    boardValueGraph.putEdgeValue(sourceNode, destinationNode, 1);
-                }
+                //for (ScotlandYard.Transport t : graph.edgeValueOrDefault(sourceNode, destinationNode, ImmutableSet.of())) {
+                boardValueGraph.putEdgeValue(sourceNode, destinationNode, 1);
+                //}
             }
         }
 

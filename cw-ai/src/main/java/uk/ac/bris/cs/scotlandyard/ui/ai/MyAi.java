@@ -67,6 +67,7 @@ public class MyAi implements Ai {
 	@Nonnull @Override public Move pickMove(
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
+		System.out.println("Round: " + counter++);
 		// returns a random move, replace with your own implementation
 		createState(board); // create new game state for each round
 		var moves = state.getAvailableMoves();
@@ -74,21 +75,23 @@ public class MyAi implements Ai {
 		// if (!isMrXTurn(moves)) { System.out.println("enter"); return null; }
 		createTree(2, board);
 		System.out.println("Size of currentLayer1: " + tree.getCurrentLayer().size());
-		// tree.upPropagation();
-		System.out.println("Round: " + counter++);
-		//System.out.println("maxScore: " + tree.getRoot().getScore().orElseThrow());
-		//for (Node node: tree.getFirstLayer()) {
-		//	System.out.print(node.getScore().orElseThrow() + " ");
-		//}
-		//System.out.println();
+		tree.upPropagation();
+		int max = -999;
+		for (Node node: tree.getFirstLayer()) {
+			if (node.getScore().orElseThrow() > max) {
+				max = node.getScore().orElseThrow();
+			}
+			System.out.print(node.getScore().orElseThrow() + " ");
+		}
+		System.out.println("Max Score: " + max);
 		//System.out.println("Size of Leaves: " + tree.getLeaves().size());
 		//System.out.println("First Layer Size: " + tree.getFirstLayer().size());
-		//for (int i = 0; i < tree.getFirstLayer().size(); i++) {
-		//	Node node = tree.getFirstLayer().get(i);
-		//	if (node.getScore().orElseThrow().equals(tree.getRoot().getScore().orElseThrow())) {
-		//		return moves.asList().get(i);
-		//	}
-		//}
+		for (int i = 0; i < tree.getFirstLayer().size(); i++) {
+			Node node = tree.getFirstLayer().get(i);
+			if (node.getScore().orElseThrow().equals(max)) {
+				return tree.getRoot().getBestMoves().get(i);
+			}
+		}
 		throw new RuntimeException("Impossible");
 	}
 

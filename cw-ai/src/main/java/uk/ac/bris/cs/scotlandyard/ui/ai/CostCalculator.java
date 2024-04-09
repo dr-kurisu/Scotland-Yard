@@ -38,7 +38,7 @@ public class CostCalculator {
         for (ScotlandYard.Ticket t : tickets){
             switch (t){
                 case BUS -> bus--;
-                case DOUBLE -> cost += 7;
+                case DOUBLE -> cost += 1000;
                 case TAXI -> taxi--;
                 case SECRET -> {
                     secret--;

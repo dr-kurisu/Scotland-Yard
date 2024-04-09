@@ -7,6 +7,7 @@ import uk.ac.bris.cs.scotlandyard.model.Board;
 import uk.ac.bris.cs.scotlandyard.model.Move;
 import uk.ac.bris.cs.scotlandyard.model.Piece;
 
+import java.awt.geom.Arc2D;
 import java.util.*;
 
 import static java.util.Collections.min;
@@ -18,14 +19,22 @@ public class MoveModifier {
                                                  boolean type,
                                                  int mrXLocation,
                                                  ImmutableValueGraph<Integer, Integer> graph) {
-        if (!type) return maxBestMoves(state, moves);
-        else return minBestMoves(state, moves, pieceNearest, mrXLocation, graph);
+        if (!type) return maxBestMoves(state, moves, pieceNearest, mrXLocation, graph);
+        else return minBestMoves(state);
     }
-    public static List<Move> maxBestMoves(Board.GameState state, ImmutableSet<Move> moves) {
+    public static List<Move> maxBestMoves(Board.GameState state, ImmutableSet<Move> moves, Piece nearestPiece, int mrXLocation,
+                                          ImmutableValueGraph<Integer, Integer> graph) {
         // mrX choice one best move of each destination according to the ticket
         Map<Integer, Move> moveMap = new HashMap<>();
         Map<Integer, Float> costMap = new HashMap<>();
+        boolean noDoubleMove = false;
+        var distances = ScoreCalculator.getDistances(graph, mrXLocation);
+        if (distances[state.getDetectiveLocation((Piece.Detective) nearestPiece).orElseThrow() - 1] > 1) {
+            noDoubleMove = true;
+        }
+        // System.out.println("No Double: " + noDoubleMove);
         for (Move move : moves) {
+            if (noDoubleMove && move instanceof Move.DoubleMove) continue;
             // get cost of tickets
             float cost = CostCalculator.maxCalculateCost(state, move);
             int destination = getDestination(move);
@@ -37,20 +46,14 @@ public class MoveModifier {
                 moveMap.put(destination, move);
             }
         }
-        // System.out.println("min cost: " + costMap);
-        List<Move> result = new ArrayList<>();
-        for (Move move : moveMap.values()) {
-            result.add(move);
-        }
-        return result;
+        return List.copyOf(moveMap.values());
     }
 
-    public static List<Move> minBestMoves(Board.GameState state, ImmutableSet<Move> moves, Piece pieceNearest, int mrXLocation, ImmutableValueGraph<Integer, Integer> graph) {
+    public static List<Move> minBestMoves(Board.GameState state) {
         // except one detective (The Nearest)
         // Detectives choice one best move of each destination according to the ticket
-        var distances = ScoreCalculator.getDistances(graph, mrXLocation);
-        Board.GameState tempState = moveAllExceptNearestPiece(state, distances, pieceNearest, List.copyOf(moves));
-        List<Move> nearestMoves = List.copyOf(tempState.getAvailableMoves());
+        List<Move> nearestMoves = List.copyOf(state.getAvailableMoves());
+        // can reduce number of nodes
         return nearestMoves;
     }
 
@@ -61,11 +64,11 @@ public class MoveModifier {
             List<Move> moves) {
         List<Piece.Detective> detectives = getDetectives(state);
         var tempState = state;
-        Map<Integer, Integer> distanceMap = new HashMap<>(); // to store distance to mrX at that point
-        Map<Integer, Float> costMap = new HashMap<>(); // to store cost at that point
-        Map<Integer, Move> moveMap = new HashMap<>(); // to store Move at that point
-
         for (Piece.Detective d : detectives) {
+            moves = List.copyOf(tempState.getAvailableMoves());
+            Map<Integer, Integer> distanceMap = new HashMap<>(); // to store distance to mrX at that point
+            Map<Integer, Float> costMap = new HashMap<>(); // to store cost at that point
+            Map<Integer, Move> moveMap = new HashMap<>(); // to store Move at that point
             if (d == pieceNearest) continue;
             for (Move move : moves) {
                 if (move.commencedBy() != d) continue;
@@ -73,7 +76,7 @@ public class MoveModifier {
                 float cost = CostCalculator.minCalculateCost(state, move);
                 if (!distanceMap.containsKey(destination)) {
                     // can be simplified (reduce usage of dijkstar algorithm)
-                    distanceMap.put(destination, distances[destination]);
+                    distanceMap.put(destination, distances[destination-1]);
                     costMap.put(destination, cost);
                     moveMap.put(destination, move);
                 }else if (cost < costMap.get(destination)) {
@@ -82,7 +85,10 @@ public class MoveModifier {
                 }
             }
             // check
-            if (distanceMap.size() == 0) throw new RuntimeException("Impossible!");
+            if (distanceMap.size() == 0) {
+                System.out.println("Piece: " + d + " Moves: " + moves);
+                throw new RuntimeException("Impossible!");
+            }
             // find min distance
             int minDistance = min(distanceMap.values());
             // System.out.println("minDistance: " + minDistance);
@@ -99,7 +105,7 @@ public class MoveModifier {
                     bestMove = moveMap.get(des);
                 }
             }
-            tempState.advance(bestMove);
+            tempState = tempState.advance(bestMove);
         }
         return tempState;
     }

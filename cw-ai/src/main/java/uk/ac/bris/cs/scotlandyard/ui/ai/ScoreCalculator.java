@@ -18,17 +18,17 @@ public class ScoreCalculator {
         var pieces = state.getPlayers();
         for (Piece p : pieces) {
             if (p.isMrX()) continue;
-            result += distances[state.getDetectiveLocation((Piece.Detective) p).orElseThrow()];
+            result += distances[state.getDetectiveLocation((Piece.Detective) p).orElseThrow() - 1];
         }
         return result;
     }
 
     // *** tomorrow need to do : add scoring function to tree
-    public static int getScore(ImmutableValueGraph<Integer, Integer> graph, Board.GameState state, int src, int des, int freedom) {
-        int[] distances = getDistances(graph, src);
+    public static int getScore(int[] distances, Board.GameState state, int des, int freedom) {
         // to make this function maximum
-        // the first important thing is nearest distance
+        // the first important thing is the nearest distance
         // the second is total distance and freedom
-        return calculateTotalDistance(distances, state) + 50 * distances[des] + freedom;
+        // calculateTotalDistance(distances, state) + (100 - 10 * distances[des]) * distances[des] + freedom;
+        return calculateTotalDistance(distances, state) + distances[des - 1] * 30;
     }
 }
