@@ -60,16 +60,15 @@ public class MoveModifier {
     public static Board.GameState moveAllExceptNearestPiece(
             Board.GameState state,
             int[] distances,
-            Piece pieceNearest,
-            List<Move> moves) {
+            Piece pieceNearest) {
         List<Piece.Detective> detectives = getDetectives(state);
         var tempState = state;
         for (Piece.Detective d : detectives) {
-            moves = List.copyOf(tempState.getAvailableMoves());
+            if (d == pieceNearest) continue;
+            var moves = List.copyOf(tempState.getAvailableMoves());
             Map<Integer, Integer> distanceMap = new HashMap<>(); // to store distance to mrX at that point
             Map<Integer, Float> costMap = new HashMap<>(); // to store cost at that point
             Map<Integer, Move> moveMap = new HashMap<>(); // to store Move at that point
-            if (d == pieceNearest) continue;
             for (Move move : moves) {
                 if (move.commencedBy() != d) continue;
                 int destination = getDestination(move);
@@ -86,8 +85,9 @@ public class MoveModifier {
             }
             // check
             if (distanceMap.size() == 0) {
-                System.out.println("Piece: " + d + " Moves: " + moves);
-                throw new RuntimeException("Impossible!");
+                System.out.println("Piece: " + d + " has no available move.");
+                continue;
+            //    throw new RuntimeException("Impossible!");
             }
             // find min distance
             int minDistance = min(distanceMap.values());

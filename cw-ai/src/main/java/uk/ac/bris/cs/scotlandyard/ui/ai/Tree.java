@@ -26,7 +26,7 @@ public class Tree {
         this.distanceGraph = createValueGraph(state.getSetup().graph);
 
         // add first layer of node
-        this.root = new Node(state, false, null, mrXLocation, ScoreCalculator.getDistances(distanceGraph, mrXLocation), distanceGraph);
+        this.root = new Node(state, false, null, mrXLocation, ScoreCalculator.getDistances(distanceGraph, mrXLocation));
         this.currentLayer.addAll(root.addChildren(distanceGraph));
         this.firstLayer = this.currentLayer;
 
@@ -46,13 +46,16 @@ public class Tree {
 
     public void upPropagation() {
         // refer to back propagation
-        // get score for leaves
+        // get score for leaves and broadcast values
         for (Node node : this.leaves) {
             Optional<Integer> nearestLocation = node.state.getDetectiveLocation((Piece.Detective) node.getNearestPiece());
+            // check
             if (nearestLocation.isEmpty()) System.out.println("nearest location is empty");
-            int score = ScoreCalculator.getScore(node.getDistances(), node.state, nearestLocation.orElseThrow(), node.getFreedom());
-            // System.out.println("score: " + score + " des: " + node.getMrXLocation());
-            node.setScore(score);
+            Optional<Integer> nodeScore = node.getScore();
+            if (nodeScore.isEmpty()) {
+                int score = ScoreCalculator.getScore(node.getDistances(), node.state, nearestLocation.orElseThrow(), node.getFreedom());
+                node.setScore(score);
+            }
         }
         this.currentLayer = this.leaves;
         while (!this.currentLayer.isEmpty()) {

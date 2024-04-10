@@ -28,7 +28,8 @@ public class ScoreCalculator {
         // to make this function maximum
         // the first important thing is the nearest distance
         // the second is total distance and freedom
-        // calculateTotalDistance(distances, state) + (100 - 10 * distances[des]) * distances[des] + freedom;
-        return calculateTotalDistance(distances, state) + distances[des - 1] * 30;
+        // the weight of distances[des - 1] increase while decrease of distance[des - 1]
+        // maximum weight: 100, min: 0;
+        return calculateTotalDistance(distances, state) + 10 * distances[des - 1] * (10 - distances[des - 1]) + freedom;
     }
 }

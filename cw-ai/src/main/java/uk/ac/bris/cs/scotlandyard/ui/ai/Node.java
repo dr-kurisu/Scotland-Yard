@@ -24,7 +24,7 @@ public class Node {
     public ImmutableSet<Piece> winner;
 
     Node(Board.GameState state, boolean type, Node parent, int mrXlocation,
-         int [] distances, ImmutableValueGraph<Integer, Integer> graph)
+         int [] distances)
     {
         this.state = state;
         this.type = type;  // false: max, true: min
@@ -37,12 +37,13 @@ public class Node {
         if (!this.winner.isEmpty()) {
             if (this.winner.asList().get(0).isMrX()) this.score = Optional.of(999);
             else this.score = Optional.of(-999);
+            return;
         }
         this.moves = state.getAvailableMoves();
     }
     public ImmutableSet<Node> addChildren(ImmutableValueGraph<Integer, Integer> graph) {
         if (this.type) {
-            state = MoveModifier.moveAllExceptNearestPiece(this.state, this.distances, pieceNearest, List.copyOf(this.moves));
+            state = MoveModifier.moveAllExceptNearestPiece(this.state, this.distances, pieceNearest);
             // assert this.state.getAvailableMoves().asList().get(0).commencedBy().isMrX();
         }
         this.bestMoves = MoveModifier.BestMove(state, moves, pieceNearest, type, mrXLocation, graph);
@@ -51,9 +52,9 @@ public class Node {
         for (Move move : bestMoves) {
             if (move.commencedBy().isMrX()) {  // mrX changes location
                 int newLocation = MoveModifier.getDestination(move);
-                builder.add(new Node(state.advance(move), !type, this, newLocation, ScoreCalculator.getDistances(graph, newLocation), graph));
+                builder.add(new Node(state.advance(move), !type, this, newLocation, ScoreCalculator.getDistances(graph, newLocation)));
             }else{
-                builder.add(new Node(state.advance(move), !type, this, mrXLocation, distances, graph));
+                builder.add(new Node(state.advance(move), !type, this, mrXLocation, distances));
             }
         }
         return builder.build();
@@ -72,18 +73,11 @@ public class Node {
         }
         pieceNearest = piece;
     }
-
-    public static int calculateTotalDistance(int[] distances, Board.GameState state) {
-        int result = 0;
-        var pieces = state.getPlayers();
-        for (Piece p : pieces) {
-            if (p.isMrX()) continue;
-            result += distances[state.getDetectiveLocation((Piece.Detective) p).orElseThrow() - 1];
+    public void setScore(int score) {
+        if (this.score.orElse(998) != 999 && this.score.orElse(998) != -999){
+            this.score = Optional.of(score);
         }
-        return result;
     }
-
-    public void setScore(int score) { if (this.score.isEmpty()) this.score = Optional.of(score); }
     public Optional<Integer> getScore() { return this.score; }
     public boolean getType() { return this.type; }
     public Node getParent() { return this.parent; }
