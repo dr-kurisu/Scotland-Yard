@@ -73,16 +73,17 @@ public class MyAi implements Ai {
 		var moves = state.getAvailableMoves();
 		if (moves.isEmpty()) { throw new RuntimeException("No available move"); }
 		// if (!isMrXTurn(moves)) { System.out.println("enter"); return null; }
-		createTree(4, board);
+		createTree(2, board);
 		System.out.println("Size of currentLayer: " + tree.getCurrentLayer().size());
 		System.out.println("Size of leaves: " + tree.getLeaves().size());
 		tree.upPropagation();
+		var firstLayer = tree.getFirstLayer();
 		// check
-		for (Node node : tree.getFirstLayer()) {
-			assert node.getScore().isPresent();
+		for (Node node : firstLayer) {
+			if (node.getScore().isEmpty()) throw new RuntimeException("here");
 		}
 		int max = -999;
-		for (Node node: tree.getFirstLayer()) {
+		for (Node node: firstLayer) {
 			if (node.getScore().orElseThrow() > max) {
 				max = node.getScore().orElseThrow();
 			}
