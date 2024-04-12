@@ -29,9 +29,9 @@ public class MoveModifier {
         Map<Integer, Float> costMap = new HashMap<>();
         boolean noDoubleMove = false;
         var distances = ScoreCalculator.getDistances(graph, mrXLocation);
-        if (distances[state.getDetectiveLocation((Piece.Detective) nearestPiece).orElseThrow() - 1] > 1) {
-            noDoubleMove = true;
-        }
+        //if (distances[state.getDetectiveLocation((Piece.Detective) nearestPiece).orElseThrow() - 1] > 2) {
+        //    noDoubleMove = true;
+        //}
         // System.out.println("No Double: " + noDoubleMove);
         for (Move move : moves) {
             if (noDoubleMove && move instanceof Move.DoubleMove) continue;
@@ -85,6 +85,7 @@ public class MoveModifier {
             }
             // check
             if (distanceMap.size() == 0) {
+                System.out.println(d + ": " + moves);
                 System.out.println("Piece: " + d + " has no available move.");
                 continue;
             //    throw new RuntimeException("Impossible!");

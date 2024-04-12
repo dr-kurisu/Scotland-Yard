@@ -42,7 +42,7 @@ public class CostCalculator {
                 case TAXI -> taxi--;
                 case SECRET -> {
                     secret--;
-                    cost += 3;
+                    cost += 100;
                 }
                 case UNDERGROUND -> underground--;
             }

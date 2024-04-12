@@ -43,8 +43,8 @@ public class Node {
     }
     public ImmutableSet<Node> addChildren(ImmutableValueGraph<Integer, Integer> graph) {
         if (this.type) {
-            state = MoveModifier.moveAllExceptNearestPiece(this.state, this.distances, pieceNearest);
-            // assert this.state.getAvailableMoves().asList().get(0).commencedBy().isMrX();
+            if (!this.winner.isEmpty()) throw new RuntimeException("000");
+            state = MoveModifier.moveAllExceptNearestPiece(state, distances, pieceNearest);
         }
         this.bestMoves = MoveModifier.BestMove(state, moves, pieceNearest, type, mrXLocation, graph);
         //System.out.println(bestMoves);
@@ -74,7 +74,7 @@ public class Node {
         pieceNearest = piece;
     }
     public void setScore(int score) {
-        if (this.score.orElse(998) != 999 && this.score.orElse(998) != -999){
+        if (this.score.orElse(0) != 999 && this.score.orElse(0) != -999){
             this.score = Optional.of(score);
         }
     }

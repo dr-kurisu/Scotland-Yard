@@ -57,11 +57,14 @@ public class Tree {
                 node.setScore(score);
             }
         }
+        // check
+        for (Node node : this.leaves) { assert !node.getScore().isEmpty(); }
+
         this.currentLayer = this.leaves;
         while (!this.currentLayer.isEmpty()) {
             List<Node> previousLayer = new ArrayList<>();
             for (Node node : currentLayer) {
-                if (node.getParent() == null) continue;
+                if (node.getParent() == root) continue;
                 previousLayer.add(node.getParent());
                 Optional<Integer> parentScore = node.getParent().getScore();
                 int score = node.getScore().orElseThrow();

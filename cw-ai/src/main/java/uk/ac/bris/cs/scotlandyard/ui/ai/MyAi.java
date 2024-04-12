@@ -1,5 +1,6 @@
 package uk.ac.bris.cs.scotlandyard.ui.ai;
 
+import java.awt.geom.Arc2D;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
@@ -72,7 +73,6 @@ public class MyAi implements Ai {
 		createState(board); // create new game state for each round
 		var moves = state.getAvailableMoves();
 		if (moves.isEmpty()) { throw new RuntimeException("No available move"); }
-		// if (!isMrXTurn(moves)) { System.out.println("enter"); return null; }
 		createTree(2, board);
 		System.out.println("Size of currentLayer: " + tree.getCurrentLayer().size());
 		System.out.println("Size of leaves: " + tree.getLeaves().size());
@@ -80,7 +80,12 @@ public class MyAi implements Ai {
 		var firstLayer = tree.getFirstLayer();
 		// check
 		for (Node node : firstLayer) {
-			if (node.getScore().isEmpty()) throw new RuntimeException("here");
+			if (node.getScore().isEmpty()) node.setScore(-999);
+		}
+		for (int i = 0; i < tree.getRoot().getBestMoves().size(); i++) {
+			if (tree.getRoot().getBestMoves().get(i) instanceof Move.DoubleMove){
+				tree.getFirstLayer().get(i).setScore(tree.getFirstLayer().get(i).getScore().orElseThrow() - 200);
+			}
 		}
 		int max = -999;
 		for (Node node: firstLayer) {
