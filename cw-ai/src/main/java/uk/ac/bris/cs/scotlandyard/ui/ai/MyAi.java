@@ -80,11 +80,14 @@ public class MyAi implements Ai {
 		var firstLayer = tree.getFirstLayer();
 		// check
 		for (Node node : firstLayer) {
-			if (node.getScore().isEmpty()) node.setScore(-999);
+			// if (node.getScore().isEmpty()) node.setScore(-999);
+			if (node.getScore().isEmpty()) {
+				throw new RuntimeException("node does not have score");
+			}
 		}
-		for (int i = 0; i < tree.getRoot().getBestMoves().size(); i++) {
-			if (tree.getRoot().getBestMoves().get(i) instanceof Move.DoubleMove){
-				tree.getFirstLayer().get(i).setScore(tree.getFirstLayer().get(i).getScore().orElseThrow() - 200);
+		for (Node node : firstLayer) {
+			if (node.getMove() instanceof Move.DoubleMove){
+				node.setScore(node.getScore().orElseThrow() - 200);
 			}
 		}
 		int max = -999;
@@ -100,7 +103,8 @@ public class MyAi implements Ai {
 		for (int i = 0; i < tree.getFirstLayer().size(); i++) {
 			Node node = tree.getFirstLayer().get(i);
 			if (node.getScore().orElseThrow().equals(max)) {
-				return tree.getRoot().getBestMoves().get(i);
+				System.out.println(node.getNearestPiece());
+				return tree.getFirstLayer().get(i).getMove();
 			}
 		}
 		throw new RuntimeException("Impossible");

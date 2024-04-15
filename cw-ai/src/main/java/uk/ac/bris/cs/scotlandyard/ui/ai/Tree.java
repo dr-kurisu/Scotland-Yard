@@ -8,33 +8,32 @@ import uk.ac.bris.cs.scotlandyard.model.Board;
 import uk.ac.bris.cs.scotlandyard.model.Piece;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class Tree {
-    private List<Node> leaves;
+    private Set<Node> leaves;
     private Node root;
-    private List<Node> firstLayer;
-    private List<Node> currentLayer;
+    private Set<Node> firstLayer;
+    private Set<Node> currentLayer;
     private ImmutableValueGraph<Integer, Integer> distanceGraph;
 
     Tree(Board.GameState state, int depth, int mrXLocation) {
         // MrX turn
-        this.leaves = new ArrayList<>();
-        this.currentLayer = new ArrayList<>();
+        this.leaves = new HashSet<>();
+        this.currentLayer = new HashSet<>();
         this.distanceGraph = createValueGraph(state.getSetup().graph);
 
         // add first layer of node
-        this.root = new Node(state, false, null, mrXLocation, ScoreCalculator.getDistances(distanceGraph, mrXLocation));
+        this.root = new Node(state, false, null, mrXLocation, ScoreCalculator.getDistances(distanceGraph, mrXLocation), null);
         this.currentLayer.addAll(root.addChildren(distanceGraph));
         this.firstLayer = this.currentLayer;
 
         for (int i = 0; i < depth; i++) {
-            List<Node> nextLayer = new ArrayList<>();
+            Set<Node> nextLayer = new HashSet<>();
             for (Node node : this.currentLayer) {
                 if (node.winner.isEmpty()) {
-                    nextLayer.addAll(node.addChildren(distanceGraph));
+                    var nodes = node.addChildren(distanceGraph);
+                    if (nodes != null) nextLayer.addAll(nodes);
                 } else {
                     this.leaves.add(node);
                 }
@@ -58,11 +57,11 @@ public class Tree {
             }
         }
         // check
-        for (Node node : this.leaves) { assert !node.getScore().isEmpty(); }
+        for (Node node : this.leaves) {  if (node.getScore().isEmpty()) throw new RuntimeException("pio"); }
 
         this.currentLayer = this.leaves;
         while (!this.currentLayer.isEmpty()) {
-            List<Node> previousLayer = new ArrayList<>();
+            Set<Node> previousLayer = new HashSet<>();
             for (Node node : currentLayer) {
                 if (node.getParent() == root) continue;
                 previousLayer.add(node.getParent());
@@ -91,8 +90,6 @@ public class Tree {
 
         // consider each node
         for (int sourceNode : graph.nodes()) {
-            boardValueGraph.addNode(sourceNode);
-            // consider each adjacent nodes
             for (Integer destinationNode : graph.adjacentNodes(sourceNode)) {
                 // give value to each possible transport
                 //for (ScotlandYard.Transport t : graph.edgeValueOrDefault(sourceNode, destinationNode, ImmutableSet.of())) {
@@ -103,8 +100,8 @@ public class Tree {
 
         return ImmutableValueGraph.copyOf(boardValueGraph);
     }
-    public List<Node> getLeaves() { return this.leaves; }
-    public List<Node> getFirstLayer() { return this.firstLayer; }
-    public List<Node> getCurrentLayer() { return this.currentLayer; }
+    public Set<Node> getLeaves() { return this.leaves; }
+    public List<Node> getFirstLayer() { return this.firstLayer.stream().toList(); }
+    public Set<Node> getCurrentLayer() { return this.currentLayer; }
 
     public Node getRoot() { return this.root; }}

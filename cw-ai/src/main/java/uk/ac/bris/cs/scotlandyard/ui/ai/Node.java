@@ -15,16 +15,17 @@ public class Node {
     private int[] distances;   // distance from mrX to other points
     private int mrXLocation;
     private Node parent;  // parent node
-    private boolean type;      // type of min or max node (0: min, 1 :max)
+    private boolean type;      // type of min or max node (0: min(Detective), 1 : max(MrX))
     private Piece pieceNearest;
     private ImmutableSet<Move> moves;
     private List<Move> bestMoves;
+    private Move move;
     public Board.GameState state;  // state of game
 
     public ImmutableSet<Piece> winner;
 
     Node(Board.GameState state, boolean type, Node parent, int mrXlocation,
-         int [] distances)
+         int [] distances, Move move)
     {
         this.state = state;
         this.type = type;  // false: max, true: min
@@ -32,6 +33,7 @@ public class Node {
         this.parent = parent;
         this.distances = distances;
         this.winner = state.getWinner();
+        this.move = move;
         getPieceNearest(this.state);
         this.score = Optional.empty();
         if (!this.winner.isEmpty()) {
@@ -41,23 +43,26 @@ public class Node {
         }
         this.moves = state.getAvailableMoves();
     }
-    public ImmutableSet<Node> addChildren(ImmutableValueGraph<Integer, Integer> graph) {
+    public List<Node> addChildren(ImmutableValueGraph<Integer, Integer> graph) {
         if (this.type) {
-            if (!this.winner.isEmpty()) throw new RuntimeException("000");
             state = MoveModifier.moveAllExceptNearestPiece(state, distances, pieceNearest);
+            if (!state.getWinner().isEmpty()) {
+                this.setScore(-999);
+                return null;
+            }
         }
         this.bestMoves = MoveModifier.BestMove(state, moves, pieceNearest, type, mrXLocation, graph);
         //System.out.println(bestMoves);
-        ImmutableSet.Builder<Node> builder = new ImmutableSet.Builder<>();
+        List<Node> builder = new ArrayList<>();
         for (Move move : bestMoves) {
             if (move.commencedBy().isMrX()) {  // mrX changes location
                 int newLocation = MoveModifier.getDestination(move);
-                builder.add(new Node(state.advance(move), !type, this, newLocation, ScoreCalculator.getDistances(graph, newLocation)));
+                builder.add(new Node(state.advance(move), !type, this, newLocation, ScoreCalculator.getDistances(graph, newLocation), move));
             }else{
-                builder.add(new Node(state.advance(move), !type, this, mrXLocation, distances));
+                builder.add(new Node(state.advance(move), !type, this, mrXLocation, distances, move));
             }
         }
-        return builder.build();
+        return builder;
     }
     private void getPieceNearest(Board.GameState state) {
         var pieces = state.getPlayers();
@@ -89,4 +94,6 @@ public class Node {
     }
 
     public List<Move> getBestMoves() { return this.bestMoves;}
+
+    public Move getMove() { return this.move; }
 }

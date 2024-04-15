@@ -7,9 +7,7 @@ import uk.ac.bris.cs.scotlandyard.model.Board;
 import uk.ac.bris.cs.scotlandyard.model.Move;
 import uk.ac.bris.cs.scotlandyard.model.Piece;
 
-import java.awt.geom.Arc2D;
 import java.util.*;
-
 import static java.util.Collections.min;
 
 public class MoveModifier {
@@ -27,14 +25,11 @@ public class MoveModifier {
         // mrX choice one best move of each destination according to the ticket
         Map<Integer, Move> moveMap = new HashMap<>();
         Map<Integer, Float> costMap = new HashMap<>();
-        boolean noDoubleMove = false;
-        var distances = ScoreCalculator.getDistances(graph, mrXLocation);
         //if (distances[state.getDetectiveLocation((Piece.Detective) nearestPiece).orElseThrow() - 1] > 2) {
         //    noDoubleMove = true;
         //}
         // System.out.println("No Double: " + noDoubleMove);
         for (Move move : moves) {
-            if (noDoubleMove && move instanceof Move.DoubleMove) continue;
             // get cost of tickets
             float cost = CostCalculator.maxCalculateCost(state, move);
             int destination = getDestination(move);
@@ -107,6 +102,8 @@ public class MoveModifier {
                 }
             }
             tempState = tempState.advance(bestMove);
+            var winner = tempState.getWinner();
+            if (!winner.isEmpty()) { return tempState; }
         }
         return tempState;
     }
