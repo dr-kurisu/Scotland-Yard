@@ -20,8 +20,8 @@ public class Node {
     private ImmutableSet<Move> moves;
     private List<Move> bestMoves;
     private Move move;
+    private List<Node> children;
     public Board.GameState state;  // state of game
-
     public ImmutableSet<Piece> winner;
 
     Node(Board.GameState state, boolean type, Node parent, int mrXlocation,
@@ -34,6 +34,7 @@ public class Node {
         this.distances = distances;
         this.winner = state.getWinner();
         this.move = move;
+        this.children = ImmutableList.of();
         getPieceNearest(this.state);
         this.score = Optional.empty();
         if (!this.winner.isEmpty()) {
@@ -51,17 +52,18 @@ public class Node {
                 return null;
             }
         }
+        List<Node> builder = new ArrayList<>();
         this.bestMoves = MoveModifier.BestMove(state, moves, pieceNearest, type, mrXLocation, graph);
         //System.out.println(bestMoves);
-        List<Node> builder = new ArrayList<>();
         for (Move move : bestMoves) {
             if (move.commencedBy().isMrX()) {  // mrX changes location
                 int newLocation = MoveModifier.getDestination(move);
                 builder.add(new Node(state.advance(move), !type, this, newLocation, ScoreCalculator.getDistances(graph, newLocation), move));
-            }else{
+            } else {
                 builder.add(new Node(state.advance(move), !type, this, mrXLocation, distances, move));
             }
         }
+        children = builder;
         return builder;
     }
     private void getPieceNearest(Board.GameState state) {
@@ -86,6 +88,7 @@ public class Node {
     public Optional<Integer> getScore() { return this.score; }
     public boolean getType() { return this.type; }
     public Node getParent() { return this.parent; }
+    public List<Node> getChildren() { return this.children; }
     public Piece getNearestPiece() { return this.pieceNearest; }
     public int[] getDistances() { return this.distances; }
     public int getFreedom() {

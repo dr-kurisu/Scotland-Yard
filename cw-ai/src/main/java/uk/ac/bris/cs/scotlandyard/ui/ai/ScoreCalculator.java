@@ -30,7 +30,7 @@ public class ScoreCalculator {
         // the second is total distance and freedom
         // the weight of distances[des - 1] increase while decrease of distance[des - 1]
         // maximum weight: 100, min: 0;
-        int score = calculateTotalDistance(distances, state) + 100 * distances[des - 1] + freedom;
+        int score = calculateTotalDistance(distances, state) + 100 * distances[des - 1] + 3 * freedom;
         if (distances[des - 1] == 1) score -= 200;
         return score;
     }
