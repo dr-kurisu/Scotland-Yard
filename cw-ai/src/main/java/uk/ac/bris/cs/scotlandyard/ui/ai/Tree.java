@@ -55,34 +55,26 @@ public class Tree {
         int bestValue;
         int score;
         if (isMaximizingPlayer) {
-            bestValue = Integer.MIN_VALUE;
+            bestValue = -999;
             for (Node childNode : node.getChildren()) {
                 if (considerDouble) {
-                    if (height == this.depth - 1
+                    if (height == this.depth
                             && childNode.getMove() instanceof Move.SingleMove) { continue;}
                 } else {
-                    if (height == this.depth - 1
+                    if (height == this.depth
                             && childNode.getMove() instanceof Move.DoubleMove) { continue;}
                 }
                 score = minimax(childNode, height - 1, false, alpha, beta);
-                if (childNode.getMove() instanceof Move.DoubleMove) { score -= 100; }
                 childNode.setScore(score);
                 bestValue = Math.max(bestValue, childNode.getScore().orElseThrow());
                 alpha = Math.max(alpha, bestValue);
+                System.out.println("bestValue = " + bestValue);
                 if (beta <= alpha) {break;}
             }
         } else {
-            bestValue = Integer.MAX_VALUE;
+            bestValue = 999;
             for (Node childNode : node.getChildren()) {
-                if (considerDouble) {
-                    if (height == this.depth - 1
-                            && childNode.getMove() instanceof Move.SingleMove) { continue;}
-                } else {
-                    if (height == this.depth - 1
-                            && childNode.getMove() instanceof Move.DoubleMove) { continue;}
-                }
                 score = minimax(childNode, height - 1, true, alpha, beta);
-                if (childNode.getMove() instanceof Move.DoubleMove) { score -= 100; }
                 childNode.setScore(score);
                 bestValue = Math.min(bestValue, childNode.getScore().orElseThrow());
                 beta = Math.min(beta, bestValue);
@@ -167,6 +159,7 @@ public class Tree {
     public List<Node> getFirstLayer() { return this.firstLayer.stream().toList(); }
     public Set<Node> getCurrentLayer() { return this.currentLayer; }
     public int getDepth() { return this.depth; }
+    public boolean getConsiderDouble() { return this.considerDouble; }
     public Node getRoot() { return this.root; }
     public int getCount() { return this.count; }
 }
