@@ -11,7 +11,6 @@ import uk.ac.bris.cs.scotlandyard.model.Player;
 import java.util.*;
 
 public class Node {
-    private Optional<Integer> score;   // score of node
     private int[] distances;   // distance from mrX to other points
     private int mrXLocation;
     private Node parent;  // parent node
@@ -21,6 +20,7 @@ public class Node {
     private List<Move> bestMoves;
     private Move move;
     private List<Node> children;
+    public  Optional<Integer> score;   // score of node
     public Board.GameState state;  // state of game
     public ImmutableSet<Piece> winner;
 

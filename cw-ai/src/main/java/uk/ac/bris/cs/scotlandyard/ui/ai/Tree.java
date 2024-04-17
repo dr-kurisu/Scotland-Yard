@@ -85,6 +85,20 @@ public class Tree {
         return bestValue;
     }
 
+    public void reduceDepth() {
+        Set<Node> newLeaves = new HashSet<>();
+        for (Node node : leaves) {
+            if (node.getScore().orElseThrow() == 999) {
+                newLeaves.add(node);
+            }
+            else{
+                if (node.getParent() == root) continue;
+                newLeaves.add(node.getParent());
+            }
+        }
+        leaves = newLeaves;
+    }
+
     public void assignLeaves() {
          //get score for leaves and broadcast values
         for (Node node : this.leaves) {
@@ -96,6 +110,18 @@ public class Tree {
                 int score = ScoreCalculator.getScore(node.getDistances(), node.state, nearestLocation.orElseThrow(), node.getFreedom());
                 node.setScore(score);
             }
+        }
+    }
+
+    public void resetTree() {
+        this.currentLayer = this.leaves;
+        while (!this.currentLayer.isEmpty()) {
+            Set<Node> newLayer = new HashSet<>();
+            for (Node node : currentLayer) {
+                node.score = Optional.empty();
+                newLayer.add(node);
+            }
+            this.currentLayer = newLayer;
         }
     }
 
