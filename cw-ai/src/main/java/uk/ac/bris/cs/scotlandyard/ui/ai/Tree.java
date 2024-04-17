@@ -68,7 +68,7 @@ public class Tree {
                 childNode.setScore(score);
                 bestValue = Math.max(bestValue, childNode.getScore().orElseThrow());
                 alpha = Math.max(alpha, bestValue);
-                System.out.println("bestValue = " + bestValue);
+                //System.out.println("bestValue = " + bestValue);
                 if (beta <= alpha) {break;}
             }
         } else {
@@ -98,47 +98,6 @@ public class Tree {
             }
         }
     }
-    //public void upPropagation() {
-    //    // refer to back propagation
-    //    // get score for leaves and broadcast values
-    //    for (Node node : this.leaves) {
-    //        Optional<Integer> nearestLocation = node.state.getDetectiveLocation((Piece.Detective) node.getNearestPiece());
-    //        // check
-    //        if (nearestLocation.isEmpty()) System.out.println("nearest location is empty");
-    //        Optional<Integer> nodeScore = node.getScore();
-    //        if (nodeScore.isEmpty()) {
-    //            int score = ScoreCalculator.getScore(node.getDistances(), node.state, nearestLocation.orElseThrow(), node.getFreedom());
-    //            node.setScore(score);
-    //        }
-    //    }
-    //    // check
-    //    for (Node node : this.leaves) {  if (node.getScore().isEmpty()) throw new RuntimeException("pio"); }
-//
-    //    this.currentLayer = this.leaves;
-    //    while (!this.currentLayer.isEmpty()) {
-    //        Set<Node> previousLayer = new HashSet<>();
-    //        for (Node node : currentLayer) {
-    //            if (node.getParent() == root) continue;
-    //            previousLayer.add(node.getParent());
-    //            Optional<Integer> parentScore = node.getParent().getScore();
-    //            int score = node.getScore().orElseThrow();
-    //            if (parentScore.isEmpty()) {
-    //                node.getParent().setScore(score);
-    //            } else {
-    //                if (node.getType()) {
-    //                    if (score > parentScore.orElseThrow()) {
-    //                        node.getParent().setScore(score);
-    //                    }
-    //                } else {
-    //                    if (score < parentScore.orElseThrow()) {
-    //                        node.getParent().setScore(score);
-    //                    }
-    //                }
-    //            }
-    //        }
-    //        this.currentLayer = previousLayer;
-    //    }
-    //}
 
     public ImmutableValueGraph<Integer, Integer> createValueGraph(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
         MutableValueGraph<Integer, Integer> boardValueGraph = ValueGraphBuilder.undirected().build();
