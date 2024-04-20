@@ -79,7 +79,7 @@ public class MoveModifier {
                 }
             }
             // check
-            if (distanceMap.size() == 0) {
+            if (distanceMap.isEmpty()) {
                 System.out.println(d + ": " + moves);
                 System.out.println("Piece: " + d + " has no available move.");
                 continue;
@@ -89,13 +89,13 @@ public class MoveModifier {
             int minDistance = min(distanceMap.values());
             // System.out.println("minDistance: " + minDistance);
             // extract all destination at that point
-            List<Integer> detinations = new ArrayList<>();
+            List<Integer> destinations = new ArrayList<>();
             for (Map.Entry<Integer, Integer> entry : distanceMap.entrySet()) {
-                if (entry.getValue() == minDistance) detinations.add(entry.getKey());
+                if (entry.getValue() == minDistance) destinations.add(entry.getKey());
             }
             float min = 999;
             Move bestMove = null;
-            for (int des : detinations) {
+            for (int des : destinations) {
                 if (costMap.get(des) < min) {
                     min = costMap.get(des);
                     bestMove = moveMap.get(des);

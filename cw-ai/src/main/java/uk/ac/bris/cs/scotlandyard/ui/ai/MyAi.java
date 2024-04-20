@@ -78,52 +78,50 @@ public class MyAi implements Ai {
 		int max = Integer.MIN_VALUE;
 		var firstLayer = tree.getFirstLayer();
 		//Set<Node> origLeaves = tree.getLeaves();
-		while (max <= -999 && miniMaxDepth > 0) {
-			//tree.setConsiderDoubleToTrue();
+		while (max <= -999 && miniMaxDepth >= 0) {
 			System.out.print(" Depth: " + miniMaxDepth);
 			max = tree.minimax(tree.getRoot(), miniMaxDepth, !tree.getRoot().getType(), Integer.MIN_VALUE, Integer.MAX_VALUE);
 
 			if (max <= -999) {
+				System.out.print(" consider double ");
 				tree.setConsiderDoubleToTrue();
 				max = tree.minimax(tree.getRoot(), miniMaxDepth, !tree.getRoot().getType(), Integer.MIN_VALUE, Integer.MAX_VALUE);
-		//for (Node node : firstLayer) {
-		//	if(node.getMove() instanceof Move.DoubleMove) continue;
-		//	//System.out.print(node.getScore().orElseThrow() + " ");
 			}
 			if (max <= -999) {
 				// not checked
 				System.out.println("consider less depth");
 				miniMaxDepth--;
-				createTree(miniMaxDepth, board);
+				//createTree(miniMaxDepth, board);
 				//tree.resetTree();
-				//tree.reduceDepth();
-				//tree.assignLeaves();
-				max = tree.minimax(tree.getRoot(), miniMaxDepth, !tree.getRoot().getType(), Integer.MIN_VALUE, Integer.MAX_VALUE);
-
+				tree.reduceDepth();
+				//tree.cleanLeaf();
+				tree.assignLeaves();
+				//System.out.println("finished assign leaves");
+				tree.setConsiderDoubleToFalse();
+				//max = tree.minimax(tree.getRoot(), miniMaxDepth, !tree.getRoot().getType(), Integer.MIN_VALUE, Integer.MAX_VALUE);
 			} else miniMaxDepth = -1;
 			System.out.print(" finish");
 		//System.out.println(" ");
 		//System.out.println("max for single: " + max);
 		}
-
-		System.out.println("next");
-		//for (Node node : firstLayer) {
-		//	if (!tree.getConsiderDouble() && node.getMove() instanceof Move.DoubleMove) { continue;}
-		//	else if (tree.getConsiderDouble() && node.getMove() instanceof Move.SingleMove) { continue;}
-		//	System.out.print(node.getScore().orElseThrow() + " ");
-		//	if (node.getScore().isEmpty()) {
-		//		throw new RuntimeException("node does not have score");
-		//	}
-		//}
-		//System.out.println(" ");
-		//System.out.println("Size of currentLayer: " + tree.getCurrentLayer().size());
-		//System.out.println("Size of leaves: " + tree.getLeaves().size());
 		System.out.println("Max Score: " + max);
 		System.out.println("Count: " + tree.getCount());
+
 		for (int i = 0; i < tree.getFirstLayer().size(); i++) {
 			Node node = tree.getFirstLayer().get(i);
-			if (!tree.getConsiderDouble() && node.getMove() instanceof Move.DoubleMove) { continue;}
-			else if (tree.getConsiderDouble() && node.getMove() instanceof Move.SingleMove) { continue;}
+			if (!tree.getConsiderDouble() && node.getMove() instanceof Move.DoubleMove) { ;continue;}
+			else if (tree.getConsiderDouble() && node.getMove() instanceof Move.SingleMove) { ;continue;}
+			System.out.print(node.getScore().orElseThrow() + " ");
+		}
+
+		for (int i = 0; i < tree.getFirstLayer().size(); i++) {
+			Node node = tree.getFirstLayer().get(i);
+			System.out.println("Consider Double: " + tree.getConsiderDouble());
+			if (!tree.getConsiderDouble() && node.getMove() instanceof Move.DoubleMove) {
+				System.out.println("Pass Double Move");continue;}
+			else if (tree.getConsiderDouble() && node.getMove() instanceof Move.SingleMove) {
+				System.out.println("Pass Single Move");continue;}
+			System.out.print(node.getScore().orElseThrow() + " ");
 			if (node.getScore().orElseThrow().equals(max)) {
 				System.out.println(node.getNearestPiece());
 				return tree.getFirstLayer().get(i).getMove();

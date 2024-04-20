@@ -105,11 +105,12 @@ public class Tree {
             Optional<Integer> nearestLocation = node.state.getDetectiveLocation((Piece.Detective) node.getNearestPiece());
             // check
             if (nearestLocation.isEmpty()) System.out.println("nearest location is empty");
-            Optional<Integer> nodeScore = node.getScore();
-            if (nodeScore.isEmpty()) {
+            //Optional<Integer> nodeScore = node.getScore();
+            if (node.state.getWinner().isEmpty()) {
                 int score = ScoreCalculator.getScore(node.getDistances(), node.state, nearestLocation.orElseThrow(), node.getFreedom());
                 node.setScore(score);
             }
+            System.out.println("leave Score: " + node.getScore());
         }
     }
 
@@ -137,9 +138,8 @@ public class Tree {
         return ImmutableValueGraph.copyOf(boardValueGraph);
     }
 
-    public void setConsiderDoubleToTrue() {
-        considerDouble = true;
-    }
+    public void setConsiderDoubleToTrue() { considerDouble = true;}
+    public void setConsiderDoubleToFalse() { considerDouble = false;}
     public Set<Node> getLeaves() { return this.leaves; }
     public List<Node> getFirstLayer() { return this.firstLayer.stream().toList(); }
     public Set<Node> getCurrentLayer() { return this.currentLayer; }

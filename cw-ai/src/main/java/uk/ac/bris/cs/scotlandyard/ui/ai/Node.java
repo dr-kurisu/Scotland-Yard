@@ -18,7 +18,7 @@ public class Node {
     private Piece pieceNearest;
     private ImmutableSet<Move> moves;
     private List<Move> bestMoves;
-    private Move move;
+    private final Move move;
     private List<Node> children;
     public  Optional<Integer> score;   // score of node
     public Board.GameState state;  // state of game
@@ -47,7 +47,7 @@ public class Node {
     public List<Node> addChildren(ImmutableValueGraph<Integer, Integer> graph) {
         if (this.type) {
             state = MoveModifier.moveAllExceptNearestPiece(state, distances, pieceNearest);
-            if (!state.getWinner().isEmpty()) {
+            if (!state.getWinner().isEmpty() && !state.getWinner().asList().get(0).isMrX()) {
                 this.setScore(-999);
                 return null;
             }
@@ -56,11 +56,16 @@ public class Node {
         this.bestMoves = MoveModifier.BestMove(state, moves, pieceNearest, type, mrXLocation, graph);
         //System.out.println(bestMoves);
         for (Move move : bestMoves) {
+            Board.GameState newState = state.advance(move);
+            if (!newState.getWinner().isEmpty() && !newState.getWinner().asList().get(0).isMrX()) {
+                this.setScore(-999);
+                continue;
+            }
             if (move.commencedBy().isMrX()) {  // mrX changes location
                 int newLocation = MoveModifier.getDestination(move);
-                builder.add(new Node(state.advance(move), !type, this, newLocation, ScoreCalculator.getDistances(graph, newLocation), move));
+                builder.add(new Node(newState, !type, this, newLocation, ScoreCalculator.getDistances(graph, newLocation), move));
             } else {
-                builder.add(new Node(state.advance(move), !type, this, mrXLocation, distances, move));
+                builder.add(new Node(newState, !type, this, mrXLocation, distances, move));
             }
         }
         children = builder;
@@ -92,8 +97,12 @@ public class Node {
     public Piece getNearestPiece() { return this.pieceNearest; }
     public int[] getDistances() { return this.distances; }
     public int getFreedom() {
-        if (this.moves == null) return 0;
-        return this.moves.size();
+        if (this.moves == null || !this.moves.asList().get(0).commencedBy().isMrX()) return 0;
+        Set<Integer> availableDestinations = new HashSet<>();
+        for (Move move : moves) {
+            availableDestinations.add(MoveModifier.getDestination(move));
+        }
+        return availableDestinations.size();
     }
 
     public List<Move> getBestMoves() { return this.bestMoves;}
