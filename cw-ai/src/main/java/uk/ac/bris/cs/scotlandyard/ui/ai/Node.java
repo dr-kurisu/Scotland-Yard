@@ -98,9 +98,9 @@ public class Node {
         pieceNearest = piece;
     }
     public void setScore(int score) {
-        if (this.score.orElse(0) != 999 && this.score.orElse(0) != -999){
+        //if (this.score.orElse(0) != 999 && this.score.orElse(0) != -999){
             this.score = Optional.of(score);
-        }
+        //}
     }
     public Optional<Integer> getScore() { return this.score; }
     public boolean getType() { return this.type; }

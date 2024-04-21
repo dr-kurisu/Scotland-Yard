@@ -24,6 +24,11 @@
     <remote-repository>
       <option name="id" value="project.local" />
       <option name="name" value="project" />
+      <option name="url" value="file:G:\OneDrive - University of Bristol\UOB\Scotland-Yard\cw-ai/repo" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="project.local" />
+      <option name="name" value="project" />
       <option name="url" value="file:E:\CW JAVA\Scotland-Yard\cw-ai/repo" />
     </remote-repository>
   </component>

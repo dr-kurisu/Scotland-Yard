@@ -44,6 +44,7 @@ public class Tree {
             for (Node node : this.currentLayer) {
                 if (node.winner.isEmpty()) {
                     var nodes = node.addChildren(distanceGraph);
+                    if (nodes == null) this.leaves.add(node);
                     if (nodes != null) nextLayer.addAll(nodes);
                 } else {
                     this.leaves.add(node);
@@ -75,7 +76,7 @@ public class Tree {
                 }
                 score = minimax(childNode, height - 1, false, alpha, beta);
                 childNode.setScore(score);
-                bestValue = Math.max(bestValue, childNode.getScore().orElseThrow());
+                bestValue = Math.max(bestValue, score);
                 alpha = Math.max(alpha, bestValue);
                 //System.out.println("bestValue = " + bestValue);
                 if (beta <= alpha) {break;}
@@ -85,7 +86,7 @@ public class Tree {
             for (Node childNode : node.getChildren()) {
                 score = minimax(childNode, height - 1, true, alpha, beta);
                 childNode.setScore(score);
-                bestValue = Math.min(bestValue, childNode.getScore().orElseThrow());
+                bestValue = Math.min(bestValue, score);
                 beta = Math.min(beta, bestValue);
                 System.out.println("Score: " + score);
                 if (beta <= alpha) {break;}

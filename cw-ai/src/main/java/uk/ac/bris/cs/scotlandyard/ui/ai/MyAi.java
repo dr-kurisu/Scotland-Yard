@@ -79,7 +79,7 @@ public class MyAi implements Ai {
 		int miniMaxDepth = tree.getDepth();
 		int max = -999;
 		//Set<Node> origLeaves = tree.getLeaves();
-		while (max <= -999 && miniMaxDepth > 0) {
+		while (max <= -999 && miniMaxDepth > 0 && !tree.getLeaves().isEmpty()) {
 			System.out.print(" Depth: " + miniMaxDepth);
 			max = tree.minimax(tree.getRoot(), miniMaxDepth, !tree.getRoot().getType(), Integer.MIN_VALUE, Integer.MAX_VALUE);
 
