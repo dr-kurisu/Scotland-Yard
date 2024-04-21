@@ -35,7 +35,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			this.log = log;
 			this.mrX = mrX;
 			this.detectives = detectives;
-			// this.winner = null;
+			this.winner = ImmutableSet.of();
 			if(setup.graph.nodes().isEmpty()) throw new IllegalArgumentException("Graph is empty!");
 			if(setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is empty!");
 			for (Player d : detectives) {
@@ -117,42 +117,40 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			boolean detectivesWin = false;
 			boolean mrXWin = false;
 
-			ImmutableSet.Builder<Piece> oldRemaining = ImmutableSet.builder();
-			for (Piece p: remaining) {oldRemaining.add(p);}
-
 			for (Player d : detectives) {
 				if (d.location() == mrX.location()) {
 					detectivesWin = true;
+					break;
 				}
 			}
-
-			ImmutableSet.Builder<Piece> newRemaining = ImmutableSet.builder();
-			for(Player d : detectives) {newRemaining.add(d.piece());}
-			remaining = newRemaining.build();
-			//if ((log.size() == setup.moves.size()) || (getAvailableMoves().isEmpty() && !detectivesWin)){
-			//	winnerSet.add(mrX.piece());
-			//	mrXWin = true;
-			//}
-
-			if (((log.size() == setup.moves.size()) && !detectivesWin) || (getAvailableMoves().isEmpty() && !detectivesWin)){
-				winnerSet.add(mrX.piece());
+			if (log.size() == setup.moves.size() && remaining.contains(mrX.piece())){
 				mrXWin = true;
 			}
-
-			ImmutableSet.Builder<Piece> mrXRemaining = ImmutableSet.builder();
-			mrXRemaining.add(mrX.piece());
-			remaining = mrXRemaining.build();
-			if (getAvailableMoves().isEmpty() && !mrXWin) {
-				detectivesWin = true;
+			if (!detectivesWin && !mrXWin) {
+				ImmutableSet.Builder<Piece> oldRemaining = ImmutableSet.builder();
+				for (Piece p : remaining) { oldRemaining.add(p);}
+				ImmutableSet.Builder<Piece> newRemaining = ImmutableSet.builder();
+				for (Player d : detectives) { newRemaining.add(d.piece());}
+				remaining = newRemaining.build();
+				if (getAvailableMoves().isEmpty()) {
+					mrXWin = true;
+				}
+				if (!mrXWin) {
+					ImmutableSet.Builder<Piece> mrXRemaining = ImmutableSet.builder();
+					mrXRemaining.add(mrX.piece());
+					remaining = mrXRemaining.build();
+					if (getAvailableMoves().isEmpty()) {
+						detectivesWin = true;
+					}
+				}
+				remaining = oldRemaining.build();
 			}
 
 			if (detectivesWin) {
 				for (Player d : detectives) {
 					winnerSet.add(d.piece());
 				}
-			}
-
-			remaining = oldRemaining.build();
+			} else if (mrXWin) { winnerSet.add(mrX.piece());}
 			winner = winnerSet.build();
 			return winner;
 		}
@@ -184,7 +182,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			moves = moveSet.build();
 			if (winner != null && !winner.isEmpty()) return ImmutableSet.of();
 			return moves;
-
 		}
 
 		@Override
