@@ -152,7 +152,7 @@ public class Tree {
     //    }
     //}
 
-    public ImmutableValueGraph<Integer, Integer> createValueGraph(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
+    public static ImmutableValueGraph<Integer, Integer> createValueGraph(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
         MutableValueGraph<Integer, Integer> boardValueGraph = ValueGraphBuilder.undirected().build();
         // consider each node
         for (int sourceNode : graph.nodes()) {
