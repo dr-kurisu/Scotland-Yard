@@ -129,7 +129,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			ImmutableSet.Builder<Piece> newRemaining = ImmutableSet.builder();
 			for(Player d : detectives) {newRemaining.add(d.piece());}
 			remaining = newRemaining.build();
-			if ((log.size() == setup.moves.size()) || (getAvailableMoves().isEmpty() && !detectivesWin)){
+			//if ((log.size() == setup.moves.size()) || (getAvailableMoves().isEmpty() && !detectivesWin)){
+			//	winnerSet.add(mrX.piece());
+			//	mrXWin = true;
+			//}
+
+			if (((log.size() == setup.moves.size()) && !detectivesWin) || (getAvailableMoves().isEmpty() && !detectivesWin)){
 				winnerSet.add(mrX.piece());
 				mrXWin = true;
 			}

@@ -2,6 +2,7 @@ package uk.ac.bris.cs.scotlandyard.ui.ai;
 
 import com.google.common.graph.ImmutableValueGraph;
 import uk.ac.bris.cs.scotlandyard.model.Board;
+import uk.ac.bris.cs.scotlandyard.model.GameSetup;
 import uk.ac.bris.cs.scotlandyard.model.Move;
 import uk.ac.bris.cs.scotlandyard.model.Piece;
 
@@ -24,13 +25,13 @@ public class ScoreCalculator {
     }
 
     // *** tomorrow need to do : add scoring function to tree
-    public static int getScore(int[] distances, Board.GameState state, int des, int freedom) {
+    public static int getScore(int[] distances, Board.GameState state, int roundsFromLastReveal, int des, int freedom) {
         // to make this function maximum
         // the first important thing is the nearest distance
         // the second is total distance and freedom
         // the weight of distances[des - 1] increase while decrease of distance[des - 1]
         // maximum weight: 100, min: 0;
-        int score = calculateTotalDistance(distances, state) + 100 * distances[des - 1] + 2 * freedom;
+        int score = calculateTotalDistance(distances, state) + 100 * distances[des - 1] + roundsFromLastReveal * freedom;
         if (distances[des - 1] == 1) score -= 200;
         return score;
     }

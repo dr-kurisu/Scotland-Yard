@@ -30,7 +30,7 @@ public class MyAi implements Ai {
 	private List<Player> detectives = new ArrayList<>();
 	private Board.GameState state;
 	private Tree tree;
-	private int counter = 1;  // counter for round number
+	private int counter = 0;  // counter for round number
 	@Nonnull @Override public String name() { return "Scottish ALPHA-GO"; }
 
 	public static int getMrxLocation(Board board) {
@@ -68,17 +68,18 @@ public class MyAi implements Ai {
 	@Nonnull @Override public Move pickMove(
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
-		System.out.print("Round: " + counter++);
+		counter++;
+		System.out.print("Round: " + counter);
+
 		// returns a random move, replace with your own implementation
 		createState(board); // create new game state for each round
 		var moves = state.getAvailableMoves();
 		if (moves.isEmpty()) { throw new RuntimeException("No available move"); }
-		createTree(3, board);
+		createTree(4, board);
 		int miniMaxDepth = tree.getDepth();
-		int max = Integer.MIN_VALUE;
-		var firstLayer = tree.getFirstLayer();
+		int max = -999;
 		//Set<Node> origLeaves = tree.getLeaves();
-		while (max <= -999 && miniMaxDepth >= 0) {
+		while (max <= -999 && miniMaxDepth > 0) {
 			System.out.print(" Depth: " + miniMaxDepth);
 			max = tree.minimax(tree.getRoot(), miniMaxDepth, !tree.getRoot().getType(), Integer.MIN_VALUE, Integer.MAX_VALUE);
 
@@ -107,31 +108,33 @@ public class MyAi implements Ai {
 		System.out.println("Max Score: " + max);
 		System.out.println("Count: " + tree.getCount());
 
-		for (int i = 0; i < tree.getFirstLayer().size(); i++) {
-			Node node = tree.getFirstLayer().get(i);
-			if (!tree.getConsiderDouble() && node.getMove() instanceof Move.DoubleMove) { ;continue;}
-			else if (tree.getConsiderDouble() && node.getMove() instanceof Move.SingleMove) { ;continue;}
-			System.out.print(node.getScore().orElseThrow() + " ");
-		}
+		List<Node> firstLayer = tree.getRoot().getChildren();
 
-		for (int i = 0; i < tree.getFirstLayer().size(); i++) {
-			Node node = tree.getFirstLayer().get(i);
+        for (Node node : firstLayer) {
+            if (!tree.getConsiderDouble() && node.getMove() instanceof Move.DoubleMove) {
+                continue;
+            } else if (tree.getConsiderDouble() && node.getMove() instanceof Move.SingleMove) {
+                continue;
+            }
+            System.out.print(node.getScore().orElseThrow() + " ");
+        }
+
+		for (Node node : firstLayer) {
 			System.out.println("Consider Double: " + tree.getConsiderDouble());
-			if (!tree.getConsiderDouble() && node.getMove() instanceof Move.DoubleMove) {
-				System.out.println("Pass Double Move");continue;}
-			else if (tree.getConsiderDouble() && node.getMove() instanceof Move.SingleMove) {
-				System.out.println("Pass Single Move");continue;}
+			if (!tree.getConsiderDouble() && node.getMove() instanceof Move.DoubleMove) {continue;}
+			else if (tree.getConsiderDouble() && node.getMove() instanceof Move.SingleMove) {continue;}
 			System.out.print(node.getScore().orElseThrow() + " ");
 			if (node.getScore().orElseThrow().equals(max)) {
-				System.out.println(node.getNearestPiece());
-				return tree.getFirstLayer().get(i).getMove();
+				if (node.getMove() instanceof Move.DoubleMove) { counter++; }
+				return node.getMove();
 			}
 		}
+		System.out.println("Root score: " + tree.getRoot().getScore());
 		throw new RuntimeException("Impossible");
 	}
 
 	public void createTree(int depth, Board board){
-		tree = new Tree(state, depth, getMrxLocation(board));
+		tree = new Tree(state, counter,depth, getMrxLocation(board));
 	}
 
 	public boolean isMrXTurn(ImmutableSet<Move> moves) {

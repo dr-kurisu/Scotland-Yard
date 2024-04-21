@@ -4,10 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.graph.ImmutableValueGraph;
 import com.google.common.graph.MutableValueGraph;
 import com.google.common.graph.ValueGraphBuilder;
-import uk.ac.bris.cs.scotlandyard.model.Board;
-import uk.ac.bris.cs.scotlandyard.model.Move;
-import uk.ac.bris.cs.scotlandyard.model.Piece;
-import uk.ac.bris.cs.scotlandyard.model.ScotlandYard;
+import uk.ac.bris.cs.scotlandyard.model.*;
 
 import java.util.*;
 
@@ -20,8 +17,9 @@ public class Tree {
     private int count;
     private final int depth;
     private boolean considerDouble;
+    private int round;
 
-    Tree(Board.GameState state, int depth, int mrXLocation) {
+    Tree(Board.GameState state, int round, int depth, int mrXLocation) {
         // MrX turn
         this.leaves = new HashSet<>();
         this.currentLayer = new HashSet<>();
@@ -29,13 +27,20 @@ public class Tree {
         this.depth = depth;
         this.considerDouble = false;
         this.count = 0;
-        // add first layer of node
-        this.root = new Node(state, false, null, mrXLocation, ScoreCalculator.getDistances(distanceGraph, mrXLocation), null);
-        this.currentLayer.addAll(root.addChildren(distanceGraph));
-        this.firstLayer = this.currentLayer;
+        this.round = round;
+        // initialise root
+        this.root = new Node(state, false, null, mrXLocation, ScoreCalculator.getDistances(distanceGraph, mrXLocation), null, ImmutableSet.of());
+        // set current layer to root
+        this.currentLayer.add(this.root);
 
+        //this.currentLayer.addAll(root.addChildren(distanceGraph));
+        //this.firstLayer = this.currentLayer;
+
+        // create the tree to the corresponding depth.
         for (int i = 0; i < depth; i++) {
             Set<Node> nextLayer = new HashSet<>();
+            // goes through each node of next layer
+            // add children nodes if no winner appears
             for (Node node : this.currentLayer) {
                 if (node.winner.isEmpty()) {
                     var nodes = node.addChildren(distanceGraph);
@@ -46,7 +51,11 @@ public class Tree {
             }
             this.currentLayer = nextLayer;
         }
+        // add last layer to leaves
         this.leaves.addAll(this.currentLayer);
+        if (leaves.isEmpty()) {
+            System.out.println("Leave is empty...");
+        }
         assignLeaves();
     }
 
@@ -78,13 +87,17 @@ public class Tree {
                 childNode.setScore(score);
                 bestValue = Math.min(bestValue, childNode.getScore().orElseThrow());
                 beta = Math.min(beta, bestValue);
+                System.out.println("Score: " + score);
                 if (beta <= alpha) {break;}
+
             }
         }
         count+=1;
         return bestValue;
     }
 
+    // reduce the depth of the tree
+    // so new leaves are the parent nodes of old leaves
     public void reduceDepth() {
         Set<Node> newLeaves = new HashSet<>();
         for (Node node : leaves) {
@@ -96,35 +109,47 @@ public class Tree {
                 newLeaves.add(node.getParent());
             }
         }
+        //if (newLeaves.isEmpty()) leaves = ImmutableSet.of(root);
         leaves = newLeaves;
     }
 
     public void assignLeaves() {
-         //get score for leaves and broadcast values
+         //get scores for leaves and broadcast values
         for (Node node : this.leaves) {
             Optional<Integer> nearestLocation = node.state.getDetectiveLocation((Piece.Detective) node.getNearestPiece());
             // check
             if (nearestLocation.isEmpty()) System.out.println("nearest location is empty");
             //Optional<Integer> nodeScore = node.getScore();
-            if (node.state.getWinner().isEmpty()) {
-                int score = ScoreCalculator.getScore(node.getDistances(), node.state, nearestLocation.orElseThrow(), node.getFreedom());
+            if (node.winner.isEmpty()) {
+                int score = ScoreCalculator.getScore(node.getDistances(), node.state, restOfRoundsToReveal(node.state, round), nearestLocation.orElseThrow(), node.getFreedom());
                 node.setScore(score);
             }
-            System.out.println("leave Score: " + node.getScore());
+            //System.out.println("leave Score: " + node.getScore());
         }
     }
 
-    public void resetTree() {
-        this.currentLayer = this.leaves;
-        while (!this.currentLayer.isEmpty()) {
-            Set<Node> newLayer = new HashSet<>();
-            for (Node node : currentLayer) {
-                node.score = Optional.empty();
-                newLayer.add(node);
-            }
-            this.currentLayer = newLayer;
+    public static int restOfRoundsToReveal(Board.GameState state,int numberOfRound) {
+        GameSetup setup = state.getSetup();
+        int logCounter = 0;
+        for (int i = 0; i < numberOfRound; i++) {
+            if (i != 0 && setup.moves.get(i - 1)) {logCounter = 0;}
+            logCounter++;
         }
+        //System.out.println("round: " + numberOfRound + " log: " + logCounter);
+        return logCounter;
     }
+
+    //public void resetTree() {
+    //    this.currentLayer = this.leaves;
+    //    while (!this.currentLayer.isEmpty()) {
+    //        Set<Node> newLayer = new HashSet<>();
+    //        for (Node node : currentLayer) {
+    //            node.score = Optional.empty();
+    //            newLayer.add(node);
+    //        }
+    //        this.currentLayer = newLayer;
+    //    }
+    //}
 
     public ImmutableValueGraph<Integer, Integer> createValueGraph(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
         MutableValueGraph<Integer, Integer> boardValueGraph = ValueGraphBuilder.undirected().build();
@@ -141,7 +166,7 @@ public class Tree {
     public void setConsiderDoubleToTrue() { considerDouble = true;}
     public void setConsiderDoubleToFalse() { considerDouble = false;}
     public Set<Node> getLeaves() { return this.leaves; }
-    public List<Node> getFirstLayer() { return this.firstLayer.stream().toList(); }
+    public List<Node> getFirstLayer() { return root.getChildren(); }
     public Set<Node> getCurrentLayer() { return this.currentLayer; }
     public int getDepth() { return this.depth; }
     public boolean getConsiderDouble() { return this.considerDouble; }

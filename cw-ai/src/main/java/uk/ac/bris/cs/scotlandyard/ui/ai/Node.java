@@ -25,47 +25,59 @@ public class Node {
     public ImmutableSet<Piece> winner;
 
     Node(Board.GameState state, boolean type, Node parent, int mrXlocation,
-         int [] distances, Move move)
+         int [] distances, Move move, ImmutableSet<Piece> winner)
     {
         this.state = state;
         this.type = type;  // false: max, true: min
         this.mrXLocation = mrXlocation;
         this.parent = parent;
         this.distances = distances;
-        this.winner = state.getWinner();
+        this.winner = winner;
         this.move = move;
         this.children = ImmutableList.of();
         getPieceNearest(this.state);
         this.score = Optional.empty();
+
         if (!this.winner.isEmpty()) {
             if (this.winner.asList().get(0).isMrX()) this.score = Optional.of(999);
             else this.score = Optional.of(-999);
             return;
         }
+
         this.moves = state.getAvailableMoves();
     }
+
+    // this returns a list of children nodes of this node
     public List<Node> addChildren(ImmutableValueGraph<Integer, Integer> graph) {
         if (this.type) {
             state = MoveModifier.moveAllExceptNearestPiece(state, distances, pieceNearest);
-            if (!state.getWinner().isEmpty() && !state.getWinner().asList().get(0).isMrX()) {
+            winner = state.getWinner();
+            // do not return children if winner appears and is not MrX
+            if (!winner.isEmpty() && !winner.asList().get(0).isMrX()) {
                 this.setScore(-999);
                 return null;
             }
         }
         List<Node> builder = new ArrayList<>();
+        // finds the moves of MrX with no duplicates or nearest detective, depend on type
         this.bestMoves = MoveModifier.BestMove(state, moves, pieceNearest, type, mrXLocation, graph);
         //System.out.println(bestMoves);
         for (Move move : bestMoves) {
             Board.GameState newState = state.advance(move);
-            if (!newState.getWinner().isEmpty() && !newState.getWinner().asList().get(0).isMrX()) {
+            ImmutableSet<Piece> newWinner = newState.getWinner();
+            // if winner appears after the nearest move and is not MrX,
+            // then do not make children nodes for this node.
+            if (this.type && !newWinner.isEmpty() && !newWinner.asList().get(0).isMrX()) {
+                this.winner = newWinner;
                 this.setScore(-999);
-                continue;
+                return null;
             }
+
             if (move.commencedBy().isMrX()) {  // mrX changes location
                 int newLocation = MoveModifier.getDestination(move);
-                builder.add(new Node(newState, !type, this, newLocation, ScoreCalculator.getDistances(graph, newLocation), move));
+                builder.add(new Node(newState, !type, this, newLocation, ScoreCalculator.getDistances(graph, newLocation), move, newWinner));
             } else {
-                builder.add(new Node(newState, !type, this, mrXLocation, distances, move));
+                builder.add(new Node(newState, !type, this, mrXLocation, distances, move, newWinner));
             }
         }
         children = builder;
@@ -100,7 +112,7 @@ public class Node {
         if (this.moves == null || !this.moves.asList().get(0).commencedBy().isMrX()) return 0;
         Set<Integer> availableDestinations = new HashSet<>();
         for (Move move : moves) {
-            availableDestinations.add(MoveModifier.getDestination(move));
+            if (move instanceof Move.SingleMove)availableDestinations.add(MoveModifier.getDestination(move));
         }
         return availableDestinations.size();
     }
