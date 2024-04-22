@@ -61,17 +61,17 @@ public class Tree {
     }
 
     public Integer minimax(Node node, int height, boolean isMaximizingPlayer, int alpha, int beta){
-        if (leaves.contains(node)) { return node.getScore().orElseThrow(); }
+        if (leaves.contains(node)) { return node.getScore().orElseThrow();}
         int bestValue;
         int score;
         if (isMaximizingPlayer) {
             bestValue = -999;
             for (Node childNode : node.getChildren()) {
                 if (considerDouble) {
-                    if (height == this.depth
+                    if (childNode.getParent() == root
                             && childNode.getMove() instanceof Move.SingleMove) { continue;}
                 } else {
-                    if (height == this.depth
+                    if (childNode.getParent() == root
                             && childNode.getMove() instanceof Move.DoubleMove) { continue;}
                 }
                 score = minimax(childNode, height - 1, false, alpha, beta);
@@ -82,12 +82,13 @@ public class Tree {
                 if (beta <= alpha) {break;}
             }
         } else {
-            bestValue = 1000;
+            bestValue = 999;
             for (Node childNode : node.getChildren()) {
                 score = minimax(childNode, height - 1, true, alpha, beta);
                 childNode.setScore(score);
-                System.out.println("best score: " + bestValue + "child score: " + score);
+                System.out.print("best score: " + bestValue + "child score: " + score);
                 bestValue = Math.min(bestValue, score);
+                System.out.println("new best score: " + bestValue);
                 beta = Math.min(beta, bestValue);
                 if (beta <= alpha) {break;}
             }
@@ -105,8 +106,8 @@ public class Tree {
             //    newLeaves.add(node);
             //}
             //else{
-                if (node.getParent() == root) continue;
-                newLeaves.add(node.getParent());
+            if (node.getParent() == root) { newLeaves.add(node); continue;}
+            newLeaves.add(node.getParent());
             //}
         }
         //if (newLeaves.isEmpty()) leaves = ImmutableSet.of(root);
@@ -123,7 +124,10 @@ public class Tree {
             if (node.winner.isEmpty()) {
                 int score = ScoreCalculator.getScore(node.getDistances(), node.state, restOfRoundsToReveal(node.state, round), nearestLocation.orElseThrow(), node.getFreedom());
                 node.setScore(score);
-            }
+                if (node.getMove() instanceof Move.SingleMove) System.out.printf("leave score: " + score);
+            } 
+            //else if (node.winner.asList().get(0).isMrX()) { node.setScore(999);
+            //} else if (!node.winner.asList().get(0).isMrX()) { node.setScore(-999);}
             //System.out.println("leave Score: " + node.getScore());
         }
     }
