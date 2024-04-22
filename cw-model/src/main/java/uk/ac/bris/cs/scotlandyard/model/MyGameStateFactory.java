@@ -113,45 +113,52 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Nonnull
 		@Override
 		public ImmutableSet<Piece> getWinner() {
-			ImmutableSet.Builder<Piece> winnerSet = ImmutableSet.builder();
-			boolean detectivesWin = false;
-			boolean mrXWin = false;
+			if (winner.isEmpty()) {
+				ImmutableSet.Builder<Piece> winnerSet = ImmutableSet.builder();
+				boolean detectivesWin = false;
+				boolean mrXWin = false;
 
-			for (Player d : detectives) {
-				if (d.location() == mrX.location()) {
-					detectivesWin = true;
-					break;
+				for (Player d : detectives) {
+					if (d.location() == mrX.location()) {
+						detectivesWin = true;
+						break;
+					}
 				}
-			}
-			if (log.size() == setup.moves.size() && remaining.contains(mrX.piece())){
-				mrXWin = true;
-			}
-			if (!detectivesWin && !mrXWin) {
-				ImmutableSet.Builder<Piece> oldRemaining = ImmutableSet.builder();
-				for (Piece p : remaining) { oldRemaining.add(p);}
-				ImmutableSet.Builder<Piece> newRemaining = ImmutableSet.builder();
-				for (Player d : detectives) { newRemaining.add(d.piece());}
-				remaining = newRemaining.build();
-				if (getAvailableMoves().isEmpty()) {
+				if (log.size() == setup.moves.size() && remaining.contains(mrX.piece())) {
 					mrXWin = true;
 				}
-				if (!mrXWin) {
+				if (!detectivesWin && !mrXWin) {
+					ImmutableSet.Builder<Piece> oldRemaining = ImmutableSet.builder();
+					for (Piece p : remaining) {
+						oldRemaining.add(p);
+					}
 					ImmutableSet.Builder<Piece> mrXRemaining = ImmutableSet.builder();
 					mrXRemaining.add(mrX.piece());
 					remaining = mrXRemaining.build();
 					if (getAvailableMoves().isEmpty()) {
 						detectivesWin = true;
 					}
+					if (!detectivesWin) {
+						ImmutableSet.Builder<Piece> newRemaining = ImmutableSet.builder();
+						for (Player d : detectives) {
+							newRemaining.add(d.piece());
+						}
+						remaining = newRemaining.build();
+						if (getAvailableMoves().isEmpty()) {
+							mrXWin = true;
+						}
+					}
+					remaining = oldRemaining.build();
 				}
-				remaining = oldRemaining.build();
+				if (detectivesWin) {
+					for (Player d : detectives) {
+						winnerSet.add(d.piece());
+					}
+				} else if (mrXWin) {
+					winnerSet.add(mrX.piece());
+				}
+				winner = winnerSet.build();
 			}
-
-			if (detectivesWin) {
-				for (Player d : detectives) {
-					winnerSet.add(d.piece());
-				}
-			} else if (mrXWin) { winnerSet.add(mrX.piece());}
-			winner = winnerSet.build();
 			return winner;
 		}
 

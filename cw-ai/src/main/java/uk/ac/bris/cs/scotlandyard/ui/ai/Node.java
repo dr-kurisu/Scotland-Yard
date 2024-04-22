@@ -68,7 +68,7 @@ public class Node {
             // if winner appears after the nearest move and is not MrX,
             // then do not make children nodes for this node.
             if (this.type && !newWinner.isEmpty() && !newWinner.asList().get(0).isMrX()) {
-                this.winner = newWinner;
+                winner = newWinner;
                 this.setScore(-999);
                 return null;
             }

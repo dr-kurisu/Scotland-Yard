@@ -117,7 +117,6 @@ public class MyAi implements Ai {
 				}
 				System.out.print(node.getScore().orElseThrow() + " ");
 			}
-
 			for (Node node : firstLayer) {
 				System.out.println("Consider Double: " + tree.getConsiderDouble());
 				if (!tree.getConsiderDouble() && node.getMove() instanceof Move.DoubleMove) {continue;}
@@ -128,7 +127,6 @@ public class MyAi implements Ai {
 					return node.getMove();
 				}
 			}
-			System.out.println("Root score: " + tree.getRoot().getScore());
 			throw new RuntimeException("Impossible");
 		}else {
 			var mrXlocation = AIUtil.getMrXLocation(board);

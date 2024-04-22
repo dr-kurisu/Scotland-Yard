@@ -82,15 +82,14 @@ public class Tree {
                 if (beta <= alpha) {break;}
             }
         } else {
-            bestValue = 999;
+            bestValue = 1000;
             for (Node childNode : node.getChildren()) {
                 score = minimax(childNode, height - 1, true, alpha, beta);
                 childNode.setScore(score);
+                System.out.println("best score: " + bestValue + "child score: " + score);
                 bestValue = Math.min(bestValue, score);
                 beta = Math.min(beta, bestValue);
-                System.out.println("Score: " + score);
                 if (beta <= alpha) {break;}
-
             }
         }
         count+=1;
@@ -102,13 +101,13 @@ public class Tree {
     public void reduceDepth() {
         Set<Node> newLeaves = new HashSet<>();
         for (Node node : leaves) {
-            if (node.getScore().orElseThrow() == 999) {
-                newLeaves.add(node);
-            }
-            else{
+            //if (node.getScore().orElseThrow() == 999) {
+            //    newLeaves.add(node);
+            //}
+            //else{
                 if (node.getParent() == root) continue;
                 newLeaves.add(node.getParent());
-            }
+            //}
         }
         //if (newLeaves.isEmpty()) leaves = ImmutableSet.of(root);
         leaves = newLeaves;
