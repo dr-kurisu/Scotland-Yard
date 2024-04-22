@@ -29,18 +29,11 @@ public class AIUtil {
     }
 
     // round 2 => find the maximum freedom of all possible state
-    public Map<Integer, Integer> searchFromAllNextState(Board board, ImmutableValueGraph<Integer, Integer> graph, ImmutableSet<Move> moves){
+    public Map<Integer, Integer> searchFromAllNextState(Board board, ImmutableSet<Move> moves){
         // at the begining of game, ticket does not need to be considered.
         // * return
         // get destinations for detectives
-        setPossibleLocations(board, getDetectiveLocations(board));
-        // check
-        //for (Map<Integer, Integer> combine : PossibleLocations) {
-        //    if (combine.size() != 5) {
-        //        System.out.println(combine);
-        //        throw new RuntimeException("here");
-        //    }
-        //}
+        setPossibleLocations(board, getDetectiveLocations(board, moves));
         int max = 0;
         Map<Integer, Integer> bestLocations = null;
         for (Map<Integer, Integer> detectiveLocations : PossibleLocations) {
@@ -98,11 +91,15 @@ public class AIUtil {
         return location;
     }
 
-    public static List<Integer> getDetectiveLocations(Board board) {
+    public static List<Integer> getDetectiveLocations(Board board, ImmutableSet<Move> moves) {
         List<Integer> locations = new ArrayList<>();
        for(Piece p : board.getPlayers()) {
            if (p.isMrX()) continue;
-           locations.add(board.getDetectiveLocation((Piece.Detective) p).orElseThrow());
+           boolean flag = false;
+           for (Move move : moves) {
+               if (move.commencedBy() == p) flag = true;
+           }
+           if (flag) locations.add(board.getDetectiveLocation((Piece.Detective) p).orElseThrow());
        }
        return locations;
     }
@@ -118,64 +115,54 @@ public class AIUtil {
         throw new RuntimeException("");
     }
 
-    public static Map<Integer, int[]> mrXPossibleLocaitons(Board board, int passedRound, int mrXLocation) {
-        Map<Integer, int[]> currentPossibleLocations = new HashMap<>();
+    public static Set<Integer> mrXPossibleLocaitons(Board board, int passedRound, int mrXLocation, List<Integer> detectiveLocations) {
+        Set<Integer> currentPossibleLocations = new HashSet<>();
         Piece piece = null;
         for(Piece p : board.getPlayers()) if (p.isMrX()) piece = p;
         var tb = board.getPlayerTickets(piece).orElseThrow();
-        currentPossibleLocations.put(mrXLocation, setTickets(tb));
+        currentPossibleLocations.add(mrXLocation);
         var graph = board.getSetup().graph;
+        // get used tickets for mrX
+        ScotlandYard.Ticket[] usedTickets;
+        usedTickets = new ScotlandYard.Ticket[passedRound];
+        int numberOfRound = board.getMrXTravelLog().size();
         for (int i = 0; i < passedRound; i++) {
-            Map<Integer, int[]> newPossibleLocations = new HashMap<>();
-            for (Map.Entry<Integer, int[]> entry : currentPossibleLocations.entrySet()) {
-                int node = entry.getKey();
-                int[] tickets = entry.getValue();
+            usedTickets[passedRound-i-1] = board.getMrXTravelLog().get(numberOfRound - i - 1).ticket();
+            //System.out.print(usedTickets[passedRound-i-1] + " ");
+        }
+        //System.out.println();
+        for (int i = 0; i < passedRound; i++) {
+            Set<Integer> newPossibleLocations = new HashSet<>();
+            for (int node : currentPossibleLocations) {
                 for (int adajacent : graph.adjacentNodes(node)){
-                    int[] newTickets = tickets;
-                    var ts = graph.edgeValue(node, adajacent).orElseThrow();
-                    if (ts.contains(ScotlandYard.Ticket.TAXI) && tickets[0] > 0) {
-                        newTickets[0]--;
-                        continue;
+                    // mrX cannot go to detective current location
+                    if (detectiveLocations.contains(adajacent)) continue;
+                    // if mrX used secret, he can go wherever he wanted
+                    // System.out.println(usedTickets[i] + " " + graph.edgeValue(node, adajacent).orElseThrow());
+                    if (usedTickets[i] == ScotlandYard.Ticket.SECRET) newPossibleLocations.add(adajacent);
+                    for (ScotlandYard.Transport t : graph.edgeValue(node, adajacent).orElseThrow()){
+                        if (t.requiredTicket() == usedTickets[i]){
+                            newPossibleLocations.add(adajacent);
+                        }
                     }
-                    if (ts.contains(ScotlandYard.Ticket.BUS) && tickets[1] > 0) {
-                        newTickets[1]--;
-                        continue;
-                    }
-                    if (ts.contains(ScotlandYard.Ticket.UNDERGROUND) && tickets[2] > 0) {
-                        newTickets[2]--;
-                        continue;
-                    }
-                    if (tickets[3] > 0) {
-                        newTickets[3]--;
-                        continue;
-                    }
-                    newPossibleLocations.put(adajacent, newTickets);
                 }
             }
             currentPossibleLocations = newPossibleLocations;
         }
+        System.out.println("MRX Locations: " + currentPossibleLocations);
         return currentPossibleLocations;
     }
-    public static int[] setTickets(Board.TicketBoard tb) {
-        int[] tickets ;
-        tickets = new int[4];
-        tickets[0] = tb.getCount(ScotlandYard.Ticket.TAXI);
-        tickets[1] = tb.getCount(ScotlandYard.Ticket.BUS);
-        tickets[2] = tb.getCount(ScotlandYard.Ticket.UNDERGROUND);
-        tickets[3] = tb.getCount(ScotlandYard.Ticket.SECRET);
-        return tickets;
-    }
-
-    public int compareOverlap(Map<Integer, Integer> map, Map<Integer, int[]> mrXPossibleLocations) {
-        // map : previous location of detective = next location of detective
+    public int compareOverlap(Map<Integer, Integer> map, Set<Integer> mrXPossibleLocations) {
+        // map : previous location of detective -> next location of detective
         Set<Integer> detectiveReachable = new HashSet<>();
         for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
             var locationDetective = entry.getValue();
             detectiveReachable.addAll(getPossibleLocationsOfNode(graph, locationDetective));
         }
+        // System.out.println("Detective Possible Locations: " + detectiveReachable);
         int counter = 0;
         for (int node : detectiveReachable) {
-            if (mrXPossibleLocations.containsKey(node)) counter++;
+            if (mrXPossibleLocations.contains(node)) counter++;
         }
         return counter;
     }
@@ -225,7 +212,6 @@ public class AIUtil {
             }
             if (!flag) return false;
         }
-
         return true;
     }
 

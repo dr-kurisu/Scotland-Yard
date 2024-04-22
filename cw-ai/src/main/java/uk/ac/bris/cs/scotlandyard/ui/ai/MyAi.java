@@ -70,6 +70,7 @@ public class MyAi implements Ai {
 			Pair<Long, TimeUnit> timeoutPair) {
 		var moves = board.getAvailableMoves();
 		if (isMrXTurn(moves)) {
+			pickedMoves = new ArrayList<>();  // for restarting bug
 			System.out.println("Round: " + ++counter);
 			// returns a random move, replace with your own implementation
 			createState(board); // create new game state for each round
@@ -128,128 +129,128 @@ public class MyAi implements Ai {
 				}
 			}
 			throw new RuntimeException("Impossible");
-		}else {
+		}
+		else {
 			var mrXlocation = AIUtil.getMrXLocation(board);
 			if (mrXlocation.isEmpty()) {
-				if (pickedMoves.isEmpty()) {
-					valueGraph = Tree.createValueGraph(board.getSetup().graph);
-					AIUtil util = new AIUtil(valueGraph);
-					// case detectives do not know location of mrX
-					// find the largest freedom place to go
-					// previous location, next location
-					Map<Integer, Integer> bestLocations = util.searchFromAllNextState(board, valueGraph, moves);
-					Map<Integer, Move> moveMap = new HashMap<>();
-					Map<Integer, Integer> costMap = new HashMap<>();
-					for (Move move : moves) {
-						int des = getDestination(move);
-						int src = move.source();
-						if (bestLocations.containsKey(src) && bestLocations.get(src) == des) {
-							if (!moveMap.containsKey(des)) {
-								moveMap.put(des, move);
-								costMap.put(des, util.calCost(move));
-							} else if (util.calCost(move) < costMap.get(des)) {
-								costMap.put(des, util.calCost(move));
-								moveMap.put(des, move);
-							}
-						}
-					}
-					pickedMoves.addAll(moveMap.values());
-				}
+				moveWithoutMrXLocation(board, moves);
 			} else {
-				System.out.println("round after reveal: " + roundsAfterReveal(board));
-				// know location of mrX
-				List<Move> movesList = new ArrayList<>(moves);
-				if (pickedMoves.isEmpty()){
-					AIUtil util = new AIUtil(valueGraph);
-					int passRound = roundsAfterReveal(board);
-					int[] distances = ScoreCalculator.getDistances(valueGraph,mrXlocation.orElseThrow());
-					List<Integer> locations = AIUtil.getDetectiveLocations(board);
-					List<Integer> visited = new ArrayList<>();
-					List<Integer> newLocations = new ArrayList<>(locations);
-					for (int l : locations) {
-						if (distances[l - 1] > passRound + 1) {
-							// unable to reach location of mrX
-							// move toward mrX
-							// 1. find piece of current location
-							Piece p = AIUtil.getPieceFromLocation(board, l);
-							// 2. find best move with the least cost
-							Move bestMove = util.getBestMoveForPieceWithLongDistance(movesList, p, distances);
-							//if (bestMove == null) {
-							//	newLocations.remove(Integer.valueOf(l)); // could misguide
-							//	Iterator<Move> iterator = movesList.iterator();
-							//	while (iterator.hasNext()) {
-							//		var move = iterator.next();
-							//		if (move.commencedBy() == p) {
-							//			iterator.remove();
-							//		}
-							//	}
-							//	continue;
-							//}
-							// 3. add to pickedMove
-							System.out.println("bestMove: " + bestMove);
-							pickedMoves.add(bestMove);
-							// 4. remove location from locations
-							newLocations.remove(Integer.valueOf(l)); // could misguide
-							visited.add(getDestination(bestMove));
-							// 5. remove moves
-							// go through and delete at the same time !
-							Iterator<Move> iterator = movesList.iterator();
-							while (iterator.hasNext()) {
-								var move = iterator.next();
-								if (move.commencedBy()==p || getDestination(move) == getDestination(bestMove)) {
-									iterator.remove();
-								}
-							}
-						}
-					}
-					locations = newLocations;
-					Map<Integer, int[]> mrXPossibleLocaitons = util.mrXPossibleLocaitons(board, passRound+1, mrXlocation.orElseThrow());
-					util.setPossibleLocations(board, locations);
-					Set<Map<Integer, Integer>> detectivePossibleLocations = util.getPossibleLocations();
-					// situation of win
-					if (passRound == 0) {
-						for (Move move : movesList) {
-							if (getDestination(move) == mrXlocation.orElseThrow()) {
-								System.out.println("win!!!");
-								return move;
-							}
-						}
-					}
-					//System.out.println(detectivePossibleLocations);
-					int max = -1;
-					Map<Integer, Integer> bestLocations = null;
-					for (Map<Integer, Integer> combine : detectivePossibleLocations) {
-						if (!util.isReachable(combine, visited, movesList, board)) continue;
-						int score = util.compareOverlap(combine, mrXPossibleLocaitons);
-						if (score > max) {
-							max = score;
-							bestLocations = combine;
-						}
-					}
-					System.out.println("max overlap: " + max);
-					System.out.println("bestLocation: " + bestLocations);
-					if (bestLocations != null) {
-						// add bestLocations to pickedMoves
-						for (Map.Entry<Integer, Integer> entry : bestLocations.entrySet()) {
-							int src = entry.getKey();
-							int des = entry.getValue();
-							Piece p = AIUtil.getPieceFromLocation(board, src);
-							int cost = 999;
-							Move bestMove = null;
-							for (Move move : movesList) {
-								if (move.commencedBy() == p && getDestination(move) == des && AIUtil.calCost(move) < cost) {
-									cost = AIUtil.calCost(move);
-									bestMove = move;
-								}
-							}
-							pickedMoves.add(bestMove);
+				int passedRound = roundsAfterReveal(board);
+				// situation of immediate win
+				if (passedRound == 0) {
+					for (Move move : moves) {
+						if (getDestination(move) == mrXlocation.orElseThrow()) {
+							System.out.println("win!!!");
+							return move;
 						}
 					}
 				}
+				moveWithMrXLocation(board, moves, mrXlocation.orElseThrow());
 			}
 			Move firstMove = pickedMoves.get(0);
 			pickedMoves.remove(firstMove);
 			return firstMove;
+		}
+	}
+
+	public void moveWithoutMrXLocation(Board board, ImmutableSet<Move> moves) {
+		if (pickedMoves.isEmpty()) {
+			valueGraph = Tree.createValueGraph(board.getSetup().graph);
+			AIUtil util = new AIUtil(valueGraph);
+			// case detectives do not know location of mrX
+			// find the largest freedom place to go
+			// previous location, next location
+			Map<Integer, Integer> bestLocations = util.searchFromAllNextState(board, moves);
+			Map<Integer, Move> moveMap = new HashMap<>();
+			Map<Integer, Integer> costMap = new HashMap<>();
+			for (Move move : moves) {
+				int des = getDestination(move);
+				int src = move.source();
+				if (bestLocations.containsKey(src) && bestLocations.get(src) == des) {
+					if (!moveMap.containsKey(des)) {
+						moveMap.put(des, move);
+						costMap.put(des, util.calCost(move));
+					} else if (util.calCost(move) < costMap.get(des)) {
+						costMap.put(des, util.calCost(move));
+						moveMap.put(des, move);
+					}
+				}
+			}
+			pickedMoves.addAll(moveMap.values());
+		}
+	}
+
+	public void moveWithMrXLocation(Board board, ImmutableSet<Move> moves, int mrXLocation) {
+		// System.out.println("round after reveal: " + roundsAfterReveal(board));
+		// know location of mrX
+		List<Move> movesList = new ArrayList<>(moves);
+		if (pickedMoves.isEmpty()){
+			AIUtil util = new AIUtil(valueGraph);
+			int passRound = roundsAfterReveal(board);
+			// situation of win
+			int[] distances = ScoreCalculator.getDistances(valueGraph, mrXLocation);
+			// add detective location to locations if they still have move
+			List<Integer> locations = AIUtil.getDetectiveLocations(board, moves);
+			List<Integer> visited = new ArrayList<>();
+			List<Integer> newLocations = new ArrayList<>(locations);
+			for (int l : locations) {
+				if (distances[l - 1] > passRound + 1) {
+					// unable to reach location of mrX
+					// move toward mrX
+					// 1. find piece of current location
+					Piece p = AIUtil.getPieceFromLocation(board, l);
+					// 2. find best move with the least cost
+					Move bestMove = util.getBestMoveForPieceWithLongDistance(movesList, p, distances);
+					// 3. add to pickedMove
+					// System.out.println("bestMove: " + bestMove);
+					pickedMoves.add(bestMove);
+					// 4. remove location from locations
+					newLocations.remove(Integer.valueOf(l)); // could misguide
+					visited.add(getDestination(bestMove));
+					// 5. remove moves
+					// go through and delete at the same time !
+					Iterator<Move> iterator = movesList.iterator();
+					while (iterator.hasNext()) {
+						var move = iterator.next();
+						if (move.commencedBy()==p || getDestination(move) == getDestination(bestMove)) {
+							iterator.remove();
+						}
+					}
+				}
+			}
+			locations = newLocations;
+			Set<Integer> mrXPossibleLocaitons = util.mrXPossibleLocaitons(board, passRound, mrXLocation, locations);
+			util.setPossibleLocations(board, locations);
+			Set<Map<Integer, Integer>> detectivePossibleLocations = util.getPossibleLocations();
+			int max = -1;
+			Map<Integer, Integer> bestLocations = null;
+			for (Map<Integer, Integer> combine : detectivePossibleLocations) {
+				if (!util.isReachable(combine, visited, movesList, board)) continue;
+				int score = util.compareOverlap(combine, mrXPossibleLocaitons);
+				if (score > max) {
+					max = score;
+					bestLocations = combine;
+				}
+			}
+			System.out.println("max overlap: " + max);
+			System.out.println("bestLocation: " + bestLocations);
+			if (bestLocations != null) {
+				// add bestLocations to pickedMoves
+				for (Map.Entry<Integer, Integer> entry : bestLocations.entrySet()) {
+					int src = entry.getKey();
+					int des = entry.getValue();
+					Piece p = AIUtil.getPieceFromLocation(board, src);
+					int cost = 999;
+					Move bestMove = null;
+					for (Move move : movesList) {
+						if (move.commencedBy() == p && getDestination(move) == des && AIUtil.calCost(move) < cost) {
+							cost = AIUtil.calCost(move);
+							bestMove = move;
+						}
+					}
+					pickedMoves.add(bestMove);
+				}
+			}
 		}
 	}
 
