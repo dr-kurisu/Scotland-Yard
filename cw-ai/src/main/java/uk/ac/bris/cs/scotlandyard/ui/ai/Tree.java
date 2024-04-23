@@ -17,7 +17,6 @@ public class Tree {
     private int count;
     private final int depth;
     private boolean considerDouble;
-    private int round;
 
     Tree(Board.GameState state, int round, int depth, int mrXLocation) {
         // MrX turn
@@ -27,7 +26,6 @@ public class Tree {
         this.depth = depth;
         this.considerDouble = false;
         this.count = 0;
-        this.round = round;
         // initialise root
         this.root = new Node(state, false, null, mrXLocation, ScoreCalculator.getDistances(distanceGraph, mrXLocation), null, ImmutableSet.of());
         // set current layer to root
@@ -54,9 +52,6 @@ public class Tree {
         }
         // add last layer to leaves
         this.leaves.addAll(this.currentLayer);
-        if (leaves.isEmpty()) {
-            System.out.println("Leave is empty...");
-        }
         assignLeaves();
     }
 
@@ -86,14 +81,13 @@ public class Tree {
             for (Node childNode : node.getChildren()) {
                 score = minimax(childNode, height - 1, true, alpha, beta);
                 childNode.setScore(score);
-                System.out.print("best score: " + bestValue + "child score: " + score);
+                //System.out.print("best score: " + bestValue + "child score: " + score);
                 bestValue = Math.min(bestValue, score);
-                System.out.println("new best score: " + bestValue);
+                //System.out.println("new best score: " + bestValue);
                 beta = Math.min(beta, bestValue);
                 if (beta <= alpha) {break;}
             }
         }
-        count+=1;
         return bestValue;
     }
 
@@ -102,15 +96,9 @@ public class Tree {
     public void reduceDepth() {
         Set<Node> newLeaves = new HashSet<>();
         for (Node node : leaves) {
-            //if (node.getScore().orElseThrow() == 999) {
-            //    newLeaves.add(node);
-            //}
-            //else{
             if (node.getParent() == root) { newLeaves.add(node); continue;}
             newLeaves.add(node.getParent());
-            //}
         }
-        //if (newLeaves.isEmpty()) leaves = ImmutableSet.of(root);
         leaves = newLeaves;
     }
 
@@ -122,38 +110,21 @@ public class Tree {
             if (nearestLocation.isEmpty()) System.out.println("nearest location is empty");
             //Optional<Integer> nodeScore = node.getScore();
             if (node.winner.isEmpty()) {
-                int score = ScoreCalculator.getScore(node.getDistances(), node.state, restOfRoundsToReveal(node.state, round), nearestLocation.orElseThrow(), node.getFreedom());
+                int score = ScoreCalculator.getScore(node.getDistances(), node.state, restOfRoundsToReveal(node.state), nearestLocation.orElseThrow(), node.getFreedom());
                 node.setScore(score);
-                if (node.getMove() instanceof Move.SingleMove) System.out.printf("leave score: " + score);
-            } 
-            //else if (node.winner.asList().get(0).isMrX()) { node.setScore(999);
-            //} else if (!node.winner.asList().get(0).isMrX()) { node.setScore(-999);}
-            //System.out.println("leave Score: " + node.getScore());
+            }
         }
     }
 
-    public static int restOfRoundsToReveal(Board.GameState state,int numberOfRound) {
+    public static int restOfRoundsToReveal(Board.GameState state) {
         GameSetup setup = state.getSetup();
         int logCounter = 0;
-        for (int i = 0; i < numberOfRound; i++) {
+        for (int i = 0; i < state.getMrXTravelLog().size() + 1; i++) {
             if (i != 0 && setup.moves.get(i - 1)) {logCounter = 0;}
             logCounter++;
         }
-        //System.out.println("round: " + numberOfRound + " log: " + logCounter);
         return logCounter;
     }
-
-    //public void resetTree() {
-    //    this.currentLayer = this.leaves;
-    //    while (!this.currentLayer.isEmpty()) {
-    //        Set<Node> newLayer = new HashSet<>();
-    //        for (Node node : currentLayer) {
-    //            node.score = Optional.empty();
-    //            newLayer.add(node);
-    //        }
-    //        this.currentLayer = newLayer;
-    //    }
-    //}
 
     public static ImmutableValueGraph<Integer, Integer> createValueGraph(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
         MutableValueGraph<Integer, Integer> boardValueGraph = ValueGraphBuilder.undirected().build();

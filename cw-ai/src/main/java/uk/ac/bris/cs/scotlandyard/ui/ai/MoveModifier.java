@@ -80,8 +80,6 @@ public class MoveModifier {
             }
             // check
             if (distanceMap.isEmpty()) {
-                System.out.println(d + ": " + moves);
-                System.out.println("Piece: " + d + " has no available move.");
                 continue;
             //    throw new RuntimeException("Impossible!");
             }

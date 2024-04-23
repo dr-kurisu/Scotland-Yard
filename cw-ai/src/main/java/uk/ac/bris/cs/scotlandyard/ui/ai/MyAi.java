@@ -80,57 +80,32 @@ public class MyAi implements Ai {
 			createTree(4, board);
 			int miniMaxDepth = tree.getDepth();
 			int max = -999;
-			//Set<Node> origLeaves = tree.getLeaves();
 			while (max <= -999 && miniMaxDepth > 0 && !tree.getLeaves().isEmpty()) {
-				System.out.print(" Depth: " + miniMaxDepth);
 				max = tree.minimax(tree.getRoot(), miniMaxDepth, !tree.getRoot().getType(), Integer.MIN_VALUE, Integer.MAX_VALUE);
 
 				if (max <= -999) {
-					System.out.print(" consider double ");
 					tree.setConsiderDoubleToTrue();
 					max = tree.minimax(tree.getRoot(), miniMaxDepth, !tree.getRoot().getType(), Integer.MIN_VALUE, Integer.MAX_VALUE);
 				}
 				if (max <= -999) {
 					// not checked
-					System.out.println("consider less depth");
 					miniMaxDepth--;
-					//createTree(miniMaxDepth, board);
-					//tree.resetTree();
 					tree.reduceDepth();
-					//tree.cleanLeaf();
 					tree.assignLeaves();
-					//System.out.println("finished assign leaves");
 					tree.setConsiderDoubleToFalse();
-					//max = tree.minimax(tree.getRoot(), miniMaxDepth, !tree.getRoot().getType(), Integer.MIN_VALUE, Integer.MAX_VALUE);
 				} else miniMaxDepth = -1;
-				System.out.print(" finish");
-				//System.out.println(" ");
-				//System.out.println("max for single: " + max);
 			}
-			System.out.println("Max Score: " + max);
-			System.out.println("Count: " + tree.getCount());
-
 			List<Node> firstLayer = tree.getRoot().getChildren();
 
-			//for (Node node : firstLayer) {
-			//	if (!tree.getConsiderDouble() && node.getMove() instanceof Move.DoubleMove) {
-			//		continue;
-			//	} else if (tree.getConsiderDouble() && node.getMove() instanceof Move.SingleMove) {
-			//		continue;
-			//	}
-			//	System.out.print(node.getScore().orElseThrow() + " ");
-			//}
 			for (Node node : firstLayer) {
-				System.out.println("Consider Double: " + tree.getConsiderDouble());
 				if (!tree.getConsiderDouble() && node.getMove() instanceof Move.DoubleMove) {continue;}
 				else if (tree.getConsiderDouble() && node.getMove() instanceof Move.SingleMove) {continue;}
-				System.out.print(node.getScore().orElseThrow() + " ");
 				if (node.getScore().orElseThrow().equals(max)) {
 					if (node.getMove() instanceof Move.DoubleMove) { counter++; }
 					return node.getMove();
 				}
 			}
-		System.out.println("root score " + tree.getRoot().getScore());
+
 			throw new RuntimeException("Impossible");
 
 		}
