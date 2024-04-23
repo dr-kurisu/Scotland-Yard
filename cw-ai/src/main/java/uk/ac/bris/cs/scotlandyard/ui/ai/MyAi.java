@@ -34,6 +34,11 @@ public class MyAi implements Ai {
 	private int counter = 0;  // counter for round number
 	@Nonnull @Override public String name() { return "Scottish ALPHA-GO"; }
 
+	/* Get the location of mrX by board
+	 *
+	 * @param board
+	 * @return int location of mrX
+	 */
 	public static int getMrxLocation(Board board) {
 		for (Move move : board.getAvailableMoves()){
 			if (move.commencedBy().isMrX()){ return move.source(); }
@@ -41,12 +46,18 @@ public class MyAi implements Ai {
 		throw new NullPointerException("No corresponding piece");
 	}
 
+	/* create a state without past log by board
+	 *
+	 * @param board
+	 * @return null (assign value to private attribute)
+	 */
 	public void createState(Board board){
 		var pieces = board.getPlayers();
 		detectives = new ArrayList<>(); // what a stupid bug
 		for (Piece piece : pieces) {
 			Board.TicketBoard tb = board.getPlayerTickets(piece).orElseThrow();
 			if (piece.isMrX()) {
+				// create Tickets map for player
 				ImmutableMap.Builder<ScotlandYard.Ticket, Integer> map = ImmutableMap.builder();
 				map.put(ScotlandYard.Ticket.TAXI, tb.getCount(ScotlandYard.Ticket.TAXI));
 				map.put(ScotlandYard.Ticket.DOUBLE, tb.getCount(ScotlandYard.Ticket.DOUBLE));
@@ -56,6 +67,7 @@ public class MyAi implements Ai {
 				mrX = new Player(piece, map.build(), getMrxLocation(board));
 			}
 			if (piece.isDetective()) {
+				// create Tickets map for player
 				ImmutableMap.Builder<ScotlandYard.Ticket, Integer> map = ImmutableMap.builder();
 				map.put(ScotlandYard.Ticket.TAXI, tb.getCount(ScotlandYard.Ticket.TAXI));
 				map.put(ScotlandYard.Ticket.BUS, tb.getCount(ScotlandYard.Ticket.BUS));
@@ -63,13 +75,21 @@ public class MyAi implements Ai {
 				detectives.add(new Player(piece, map.build(), board.getDetectiveLocation((Piece.Detective) piece).orElseThrow()));
 			}
 		}
+		// create new state by board
 		state = new MyGameStateFactory().build(board.getSetup(), mrX, ImmutableList.copyOf(detectives));
 	}
 
+	/* pick a move from moves by AI
+	 *
+	 * @param board
+	 * @param timeoutPair (limit of time?)
+	 * return Move
+	 */
 	@Nonnull @Override public Move pickMove(
 			@Nonnull Board board,
 			Pair<Long, TimeUnit> timeoutPair) {
 		var moves = board.getAvailableMoves();
+		/* ** MrX AI ** */
 		if (isMrXTurn(moves)) {
 			pickedMoves = new ArrayList<>();  // for restarting bug
 
@@ -110,10 +130,14 @@ public class MyAi implements Ai {
 
 		}
 		else {
+			/* ** Detective AI ** */
 			var mrXlocation = AIUtil.getMrXLocation(board);
+			// mrX has not been revealed
 			if (mrXlocation.isEmpty()) {
 				moveWithoutMrXLocation(board, moves);
-			} else {
+			}
+			// mrX has been revealed
+			else {
 				int passedRound = roundsAfterReveal(board);
 				// situation of immediate win
 				if (passedRound == 0) {
@@ -132,15 +156,23 @@ public class MyAi implements Ai {
 		}
 	}
 
+	/* The situation detectives do not know location of Mr.X
+	 * Add move to Picked Move by total freedom
+	 *
+	 * @param board
+	 * @param available moves
+	 * @return null (assign private attribute pickedMoves)
+	 */
 	public void moveWithoutMrXLocation(Board board, ImmutableSet<Move> moves) {
 		if (pickedMoves.isEmpty()) {
 			valueGraph = Tree.createValueGraph(board.getSetup().graph);
 			AIUtil util = new AIUtil(valueGraph);
-			// case detectives do not know location of mrX
-			// find the largest freedom place to go
-			// previous location, next location
+			// find the place having the largest freedom
+			// map: previous location, next location
 			Map<Integer, Integer> bestLocations = util.searchFromAllNextState(board, moves);
+			// map: destination, move
 			Map<Integer, Move> moveMap = new HashMap<>();
+			// map: destination, cost
 			Map<Integer, Integer> costMap = new HashMap<>();
 			for (Move move : moves) {
 				int des = getDestination(move);
@@ -158,7 +190,14 @@ public class MyAi implements Ai {
 			pickedMoves.addAll(moveMap.values());
 		}
 	}
-
+	/* The situation detectives know location of Mr.X
+	 * Add move to Picked Move by rate of overlap of mrX possible locations
+	   and detective possible locations
+	 *
+	 * @param board
+	 * @param available moves
+	 * @return null (assign private attribute pickedMoves)
+	 */
 	public void moveWithMrXLocation(Board board, ImmutableSet<Move> moves, int mrXLocation) {
 		// System.out.println("round after reveal: " + roundsAfterReveal(board));
 		// know location of mrX
@@ -174,20 +213,17 @@ public class MyAi implements Ai {
 			List<Integer> newLocations = new ArrayList<>(locations);
 			for (int l : locations) {
 				if (distances[l - 1] > passRound + 1) {
-					// unable to reach location of mrX
-					// move toward mrX
-					// 1. find piece of current location
+					// when they are unable to reach location of mrX, move toward mrX
+					// find piece of current location
 					Piece p = AIUtil.getPieceFromLocation(board, l);
-					// 2. find best move with the least cost
+					// find best move with the least cost
 					Move bestMove = util.getBestMoveForPieceWithLongDistance(movesList, p, distances);
-					// 3. add to pickedMove
-					// System.out.println("bestMove: " + bestMove);
+					// add to pickedMove
 					pickedMoves.add(bestMove);
-					// 4. remove location from locations
+					// remove location from locations
 					newLocations.remove(Integer.valueOf(l)); // could misguide
 					visited.add(getDestination(bestMove));
-					// 5. remove moves
-					// go through and delete at the same time !
+					// remove moves (go through and delete at the same time !)
 					Iterator<Move> iterator = movesList.iterator();
 					while (iterator.hasNext()) {
 						var move = iterator.next();
@@ -198,6 +234,7 @@ public class MyAi implements Ai {
 				}
 			}
 			locations = newLocations;
+			// get the best map of previous locations and next locations
 			Set<Integer> mrXPossibleLocaitons = util.mrXPossibleLocaitons(board, passRound, mrXLocation, locations);
 			util.setPossibleLocations(board, locations);
 			Set<Map<Integer, Integer>> detectivePossibleLocations = util.getPossibleLocations();
@@ -213,6 +250,7 @@ public class MyAi implements Ai {
 			}
 			System.out.println("max overlap: " + max);
 			System.out.println("bestLocation: " + bestLocations);
+			// when all detectives are far away from mrX, this could be null
 			if (bestLocations != null) {
 				// add bestLocations to pickedMoves
 				for (Map.Entry<Integer, Integer> entry : bestLocations.entrySet()) {
@@ -233,13 +271,30 @@ public class MyAi implements Ai {
 		}
 	}
 
+	/* create game tree for Mr.X's AI to predict state of game
+	 *
+	 * @param depth of tree
+	 * @param board
+	 * @return null (assign private attribute tree)
+	 */
 	public void createTree(int depth, Board board){
 		tree = new Tree(state, counter,depth, getMrxLocation(board));
 	}
 
+	/* judge if it is mrX's turn by moves
+	 *
+	 * @param available moves
+	 * @param board
+	 * @return boolean (it is mrX's turn)
+	 */
 	public boolean isMrXTurn(ImmutableSet<Move> moves) {
 		return moves.asList().get(0).commencedBy().isMrX();
 	}
+	/* get rounds after revealing
+	 *
+	 * @param board
+	 * @return number of rounds after revealing
+	 */
 	public int roundsAfterReveal(Board board) {
 		int numberOfRound = board.getMrXTravelLog().size();
 		return (numberOfRound - 3) % 5;
