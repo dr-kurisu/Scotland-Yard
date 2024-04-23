@@ -1,9 +1,7 @@
 package uk.ac.bris.cs.scotlandyard.ui.ai;
 
-import java.awt.geom.Arc2D;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
-import javax.swing.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -92,8 +90,7 @@ public class MyAi implements Ai {
 		/* ** MrX AI ** */
 		if (isMrXTurn(moves)) {
 			pickedMoves = new ArrayList<>();  // for restarting bug
-
-			System.out.println("Round: " + ++counter);
+			++counter;
 			// returns a random move, replace with your own implementation
 			createState(board); // create new game state for each round
 			if (moves.isEmpty()) { throw new RuntimeException("No available move"); }
@@ -108,7 +105,6 @@ public class MyAi implements Ai {
 					max = tree.minimax(tree.getRoot(), miniMaxDepth, !tree.getRoot().getType(), Integer.MIN_VALUE, Integer.MAX_VALUE);
 				}
 				if (max <= -999) {
-					// not checked
 					miniMaxDepth--;
 					tree.reduceDepth();
 					tree.assignLeaves();
@@ -236,7 +232,7 @@ public class MyAi implements Ai {
 			locations = newLocations;
 			// get the best map of previous locations and next locations
 			Set<Integer> mrXPossibleLocaitons = util.mrXPossibleLocaitons(board, passRound, mrXLocation, locations);
-			util.setPossibleLocations(board, locations);
+			util.setPossibleLocations(locations);
 			Set<Map<Integer, Integer>> detectivePossibleLocations = util.getPossibleLocations();
 			int max = -1;
 			Map<Integer, Integer> bestLocations = null;
@@ -248,8 +244,6 @@ public class MyAi implements Ai {
 					bestLocations = combine;
 				}
 			}
-			System.out.println("max overlap: " + max);
-			System.out.println("bestLocation: " + bestLocations);
 			// when all detectives are far away from mrX, this could be null
 			if (bestLocations != null) {
 				// add bestLocations to pickedMoves
