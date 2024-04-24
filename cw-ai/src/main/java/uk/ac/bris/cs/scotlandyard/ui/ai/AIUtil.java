@@ -13,11 +13,21 @@ public class AIUtil {
     public Set<Map<Integer, Integer>> PossibleLocations;
     public ImmutableValueGraph<Integer, Integer> graph;
 
+    /* Constructor for AIUti to prevent passing in params again and again
+     *
+     * @param graph has edge value 1 when nodes are connected
+     * @return object itself
+     */
     AIUtil(ImmutableValueGraph<Integer, Integer> graph){
         PossibleLocations = new HashSet<>();
         this.graph = graph;
     }
-    // does not know the location of mrX
+    /* Get the Possible Locations of given node
+     *
+     * @param graph (To make this function static)
+     * @param given location
+     * @return Possible location without consider of tickets
+     */
     public static Set<Integer> getPossibleLocationsOfNode(ImmutableValueGraph<Integer, Integer> distanceGraph, int location) {
         Set<Integer> locations = new HashSet<>();
         for (int node : distanceGraph.nodes()) {
@@ -28,12 +38,15 @@ public class AIUtil {
         return locations;
     }
 
-    // round 2 => find the maximum freedom of all possible state
+    /* find the combination of detective locations having maximum freedom
+     *
+     * @param board
+     * @param available moves
+     * @return Map<PreviousLocation : NextLocation>
+     */
     public Map<Integer, Integer> searchFromAllNextState(Board board, ImmutableSet<Move> moves){
-        // at the begining of game, ticket does not need to be considered.
-        // * return
-        // get destinations for detectives
-        setPossibleLocations(board, getDetectiveLocations(board, moves));
+        // get all possible location of detectives
+        setPossibleLocations(getDetectiveLocations(board, moves));
         int max = 0;
         Map<Integer, Integer> bestLocations = null;
         for (Map<Integer, Integer> detectiveLocations : PossibleLocations) {
@@ -43,10 +56,14 @@ public class AIUtil {
                 bestLocations = detectiveLocations;
             }
         }
-        System.out.println("bestLocaitons: " + bestLocations);
         return bestLocations;
     }
 
+    /* Get the set of next move that given nodes can reach
+     *
+     * @param set of given nodes to calculate location they can reach
+     * @return a set of locations they can reach
+     */
     public Set<Integer> getLocaitonsCanReach(Collection<Integer> sets) {
         Set<Integer> canReach = new HashSet<>();
         for (int location : sets) {
@@ -54,35 +71,51 @@ public class AIUtil {
         }
         return canReach;
     }
-
-    public void setPossibleLocations(Board board, List<Integer> locations){
+    /* Set the private attribute possibleLocations
+     *
+     * @param List of locations of detectives
+     * @return null
+     */
+    public void setPossibleLocations(List<Integer> locations){
         Map<Integer, Set<Integer>> destinations = new HashMap<>();
         for (int location : locations) {
             destinations.put(location, getPossibleLocationsOfNode(graph, location));
         }
         Map<Integer, Integer> visited = new HashMap<>();
         findPossibleLocations(destinations, visited);
-        // System.out.println("size of Possible Location: " + PossibleLocations.size());
     }
+    /* Recursion function used to generate all possible combination of detectives locations
+     *
+     * @param Map<Integer, Set<Integer>> destinations (currentLocation : possibleNextLocations) that detective can go
+     * @param map visited to store visited nodes prevent occupying same node twice
+     * @return null (add visited to PossibleLocations)
+     */
     public void findPossibleLocations(Map<Integer, Set<Integer>> destinations, Map<Integer, Integer> visited){
+        // if the size of visited is equals to number of detectives need to consider overlap
         if (visited.size() == destinations.size() && !visited.isEmpty()) {
+            // prevent overlapping
             Map<Integer, Integer> newVisited = new HashMap<>(visited);
             PossibleLocations.add(newVisited);
             return;
         }
-        int count = 0;
         for (var entry : destinations.entrySet()) {
             var desForOnePiece = entry.getValue();
             var previousLocation = entry.getKey();
             if (visited.containsKey(previousLocation)) continue;
             for (int des : desForOnePiece) {
                 if (visited.values().contains(des)) continue;
+                // prevent overwriting visited
                 Map<Integer, Integer> newVisited = new HashMap<>(visited);
                 newVisited.put(previousLocation, des);
                 findPossibleLocations(destinations, newVisited);
             }
         }
     }
+    /* Get the location of mrX by log
+     *
+     * @param board
+     * @return Optional<Integer> location
+     */
     public static Optional<Integer> getMrXLocation(Board board) {
         Optional<Integer> location = Optional.empty();
         for (LogEntry entry : board.getMrXTravelLog()) {
@@ -91,21 +124,32 @@ public class AIUtil {
         return location;
     }
 
+    /* Get Detectives current locations by board and moves
+     *
+     * @param board
+     * @param available moves
+     * @return List of detectives who have moves/move
+     */
     public static List<Integer> getDetectiveLocations(Board board, ImmutableSet<Move> moves) {
         List<Integer> locations = new ArrayList<>();
-       for(Piece p : board.getPlayers()) {
-           if (p.isMrX()) continue;
-           boolean flag = false;
-           for (Move move : moves) {
-               if (move.commencedBy() == p) flag = true;
-           }
-           if (flag) locations.add(board.getDetectiveLocation((Piece.Detective) p).orElseThrow());
-       }
-       return locations;
+        for(Piece p : board.getPlayers()) {
+            if (p.isMrX()) continue;
+            // only add detectives' locations when they have moves
+            boolean flag = false;
+            for (Move move : moves) {
+                if (move.commencedBy() == p) flag = true;
+            }
+            if (flag) locations.add(board.getDetectiveLocation((Piece.Detective) p).orElseThrow());
+        }
+        return locations;
     }
-
+    /* Get Piece from given current location
+     *
+     * @param board
+     * @param location of piece
+     * @return Piece at that location
+     */
     public static Piece getPieceFromLocation(Board board, int location) {
-        List<Integer> locations = new ArrayList<>();
         for(Piece p : board.getPlayers()) {
             if (p.isMrX()) continue;
             if (board.getDetectiveLocation((Piece.Detective) p).orElseThrow() == location) {
@@ -115,11 +159,16 @@ public class AIUtil {
         throw new RuntimeException("");
     }
 
+    /* Get set of mrX possible locations by passed rounds and used tickets (smart!)
+     *
+     * @param board
+     * @param passedRound
+     * @param MrXLocation
+     * @param detective locations (ensure mrX and detectives not to overlap)
+     * @return Set of mrXPossible locations
+     */
     public static Set<Integer> mrXPossibleLocaitons(Board board, int passedRound, int mrXLocation, List<Integer> detectiveLocations) {
         Set<Integer> currentPossibleLocations = new HashSet<>();
-        Piece piece = null;
-        for(Piece p : board.getPlayers()) if (p.isMrX()) piece = p;
-        var tb = board.getPlayerTickets(piece).orElseThrow();
         currentPossibleLocations.add(mrXLocation);
         var graph = board.getSetup().graph;
         // get used tickets for mrX
@@ -128,38 +177,38 @@ public class AIUtil {
         int numberOfRound = board.getMrXTravelLog().size();
         for (int i = 0; i < passedRound; i++) {
             usedTickets[passedRound-i-1] = board.getMrXTravelLog().get(numberOfRound - i - 1).ticket();
-            //System.out.print(usedTickets[passedRound-i-1] + " ");
         }
-        //System.out.println();
         for (int i = 0; i < passedRound; i++) {
             Set<Integer> newPossibleLocations = new HashSet<>();
             for (int node : currentPossibleLocations) {
-                for (int adajacent : graph.adjacentNodes(node)){
+                for (int adjacent : graph.adjacentNodes(node)){
                     // mrX cannot go to detective current location
-                    if (detectiveLocations.contains(adajacent)) continue;
-                    // if mrX used secret, he can go wherever he wanted
-                    // System.out.println(usedTickets[i] + " " + graph.edgeValue(node, adajacent).orElseThrow());
-                    if (usedTickets[i] == ScotlandYard.Ticket.SECRET) newPossibleLocations.add(adajacent);
-                    for (ScotlandYard.Transport t : graph.edgeValue(node, adajacent).orElseThrow()){
+                    if (detectiveLocations.contains(adjacent)) continue;
+                    // if mrX used secret, he can go wherever he wants
+                    if (usedTickets[i] == ScotlandYard.Ticket.SECRET) newPossibleLocations.add(adjacent);
+                    for (ScotlandYard.Transport t : graph.edgeValue(node, adjacent).orElseThrow()){
                         if (t.requiredTicket() == usedTickets[i]){
-                            newPossibleLocations.add(adajacent);
+                            newPossibleLocations.add(adjacent);
                         }
                     }
                 }
             }
             currentPossibleLocations = newPossibleLocations;
         }
-        System.out.println("MRX Locations: " + currentPossibleLocations);
         return currentPossibleLocations;
     }
-    public int compareOverlap(Map<Integer, Integer> map, Set<Integer> mrXPossibleLocations) {
+    /* Compare the rate of overlap to determine which combinations of moves we need to choose
+     *
+     * @param Detectives Possible Locations
+     * @param MrX Possible Locations
+     */
+    public int compareOverlap(Map<Integer, Integer> detectivePossibleLocations, Set<Integer> mrXPossibleLocations) {
         // map : previous location of detective -> next location of detective
         Set<Integer> detectiveReachable = new HashSet<>();
-        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+        for (Map.Entry<Integer, Integer> entry : detectivePossibleLocations.entrySet()) {
             var locationDetective = entry.getValue();
             detectiveReachable.addAll(getPossibleLocationsOfNode(graph, locationDetective));
         }
-        // System.out.println("Detective Possible Locations: " + detectiveReachable);
         int counter = 0;
         for (int node : detectiveReachable) {
             if (mrXPossibleLocations.contains(node)) counter++;
@@ -196,9 +245,17 @@ public class AIUtil {
         }
         return moveMap.get(bestDes);
     }
-    public boolean isReachable (Map<Integer, Integer> combine, List<Integer> vistied, List<Move> moves, Board board) {
+    /* Check if the combination of detectives locations are reachable by moves
+     *
+     * @param single combination of detectives locations
+     * @param visited nodes to prevent overlapping
+     * @param List of moves of remaining detectives
+     * @param board
+     * @return boolean to represent if the combine is valid
+     */
+    public boolean isReachable (Map<Integer, Integer> combine, List<Integer> visited, List<Move> moves, Board board) {
         // function: checking node has not been occupied or unable to reach
-        for (int des : combine.values()) if (vistied.contains(des)) return false;
+        for (int des : combine.values()) if (visited.contains(des)) return false;
         // unable to reach
         for (Map.Entry<Integer, Integer> entry : combine.entrySet()) {
             int src = entry.getKey();
@@ -215,7 +272,11 @@ public class AIUtil {
         return true;
     }
 
-
+    /* Calculate cost of move (Priority: taxi, bus, underground)
+     *
+     * @param move
+     * @return cost of move
+     */
     public static int calCost(Move move) {
         int cost = 0;
         for (ScotlandYard.Ticket t : move.tickets()) {
@@ -227,6 +288,9 @@ public class AIUtil {
         }
         return cost;
     }
-
+    /* Getter for PossibleLocation for detectives
+     *
+     * @return attribute PossibleLocations
+     */
     public Set<Map<Integer, Integer>> getPossibleLocations() { return this.PossibleLocations; }
 }
