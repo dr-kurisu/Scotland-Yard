@@ -10,19 +10,29 @@ import uk.ac.bris.cs.scotlandyard.model.Piece;
 import java.util.*;
 import static java.util.Collections.min;
 
+/* Class is used to reduce number of moves by the cost of move and its destination */
 public class MoveModifier {
-    public static List<Move> BestMove(           Board.GameState state,
-                                                 ImmutableSet<Move> moves,
-                                                 Piece pieceNearest,
-                                                 boolean type,
-                                                 int mrXLocation,
-                                                 ImmutableValueGraph<Integer, Integer> graph) {
-        if (!type) return MrXBestMoves(state, moves, pieceNearest, mrXLocation, graph);
+    /* Get a list of moves that each destination has one move
+     *
+     * @param Game State
+     * @param A set of available moves
+     * @param Type of node (Max/Min)
+     * @return List of moves that each destination has one move
+     */
+    public static List<Move> BestMove(Board.GameState state,
+                                      ImmutableSet<Move> moves,
+                                      boolean type) {
+        if (!type) return MrXBestMoves(state, moves);
         else return DetectiveBestMoves(state);
     }
-    public static List<Move> MrXBestMoves(Board.GameState state, ImmutableSet<Move> moves, Piece nearestPiece, int mrXLocation,
-                                          ImmutableValueGraph<Integer, Integer> graph) {
-        // mrX choice one best move of each destination according to the ticket
+    /* Get the modified moves of Mr.X (each destination has one move)
+     *
+     * @param Game state
+     * @param Set of available moves
+     * @return List of moves that each destination has one move
+     */
+    public static List<Move> MrXBestMoves(Board.GameState state, ImmutableSet<Move> moves) {
+        // mrX picks one best move of each destination by cost of tickets
         Map<Integer, Move> moveMap = new HashMap<>();
         Map<Integer, Float> costMap = new HashMap<>();
         for (Move move : moves) {
@@ -40,14 +50,25 @@ public class MoveModifier {
         return List.copyOf(moveMap.values());
     }
 
+
+    /* Get the modified moves of Detective (each destination has one move)
+     *
+     * @param Game state
+     * @return List of all possible moves
+     */
     public static List<Move> DetectiveBestMoves(Board.GameState state) {
         // except one detective (The Nearest)
-        // Detectives choice one best move of each destination according to the ticket
         List<Move> nearestMoves = List.copyOf(state.getAvailableMoves());
         // can reduce number of nodes
         return nearestMoves;
     }
-
+    /* Move all other Detectives except the nearest one and return the game state
+     *
+     * @param Game State
+     * @param int[] distance got from Dijkstra
+     * @param The nearest piece
+     * @return state after advanced
+     */
     public static Board.GameState moveAllExceptNearestPiece(
             Board.GameState state,
             int[] distances,
@@ -74,7 +95,7 @@ public class MoveModifier {
                     moveMap.put(destination, move);
                 }
             }
-            // check
+            // Detective could have empty move set
             if (distanceMap.isEmpty()) {
                 continue;
             }
@@ -93,30 +114,34 @@ public class MoveModifier {
                     bestMove = moveMap.get(des);
                 }
             }
+            // check winner for each advance
             tempState = tempState.advance(bestMove);
             var winner = tempState.getWinner();
             if (!winner.isEmpty()) { return tempState; }
         }
         return tempState;
     }
-
+    /* dijkstraAlgo to calculate an array of minimum distance to each node
+     *
+     * @param graph
+     * @param starting node
+     * @return an array of minimum distance from source to each node
+     */
     public static int[] dijkstraAlgo(
             ImmutableValueGraph<Integer, Integer> graph,
             Integer source) {
         int size = graph.nodes().size();
         int [] distance = new int[size];
         boolean [] visited = new boolean[size];
-
         for(Integer node : graph.nodes()){ distance[node-1] = 999; }
         distance[source-1] = 0;
-
+        // Use PQ to make sure when pick node with the least distance for each loop
         PriorityQueue<Integer> pq = new PriorityQueue<>(new Comparator<Integer>() {
             @Override
             public int compare(Integer o1, Integer o2) {
                 return distance[o1-1] - distance[o2-1];
             }
         });
-
         pq.offer(source);
         while(!pq.isEmpty()){
             int current = pq.poll();
@@ -131,7 +156,11 @@ public class MoveModifier {
         }
         return distance;
     }
-
+    /* Get a List of detectives from state
+     *
+     * @param Game state
+     * @return List of pieces of detectives
+     */
     public static List<Piece.Detective> getDetectives(Board.GameState state) {
         List<Piece.Detective> detectives = new ArrayList<>();
         for (Piece p : state.getPlayers()) {
@@ -142,7 +171,11 @@ public class MoveModifier {
         return detectives;
     }
 
-    // use visitor pattern to separate move
+    /* use visitor pattern to get the destination of move
+     *
+     * @param Move
+     * @retrun destination of mvoe
+     */
     public static int getDestination(Move move) {
         return move.accept(new Move.Visitor<Integer>() {
             @Override

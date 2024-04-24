@@ -8,8 +8,8 @@ import java.util.*;
 
 import static uk.ac.bris.cs.scotlandyard.ui.ai.MoveModifier.getDestination;
 
+/* Class is used to provide helper and util functions */
 public class AIUtil {
-
     public Set<Map<Integer, Integer>> PossibleLocations;
     public ImmutableValueGraph<Integer, Integer> graph;
 

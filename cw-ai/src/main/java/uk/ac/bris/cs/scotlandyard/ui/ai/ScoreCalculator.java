@@ -6,6 +6,11 @@ import uk.ac.bris.cs.scotlandyard.model.GameSetup;
 import uk.ac.bris.cs.scotlandyard.model.Move;
 import uk.ac.bris.cs.scotlandyard.model.Piece;
 
+/*
+ * This is the class designed to process scores of the nodes.
+ * Score is calculated of 3 variables: Total shortest distances from MrX,
+ * freedom and the nearest distance.
+ */
 public class ScoreCalculator {
     // two parts of score
     // 1. distance between mrX and the nearest detective

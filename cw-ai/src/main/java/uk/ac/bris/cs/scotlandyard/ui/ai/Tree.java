@@ -8,6 +8,10 @@ import uk.ac.bris.cs.scotlandyard.model.*;
 
 import java.util.*;
 
+/*
+ * Class tree is used to represent the connection between game states.
+ * It is possible to get children game state by advance of parent game state
+ */
 public class Tree {
     private Set<Node> leaves;
     private final Node root;

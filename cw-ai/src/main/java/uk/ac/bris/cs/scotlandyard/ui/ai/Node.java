@@ -6,10 +6,13 @@ import com.google.common.graph.ImmutableValueGraph;
 import uk.ac.bris.cs.scotlandyard.model.Board;
 import uk.ac.bris.cs.scotlandyard.model.Move;
 import uk.ac.bris.cs.scotlandyard.model.Piece;
-import uk.ac.bris.cs.scotlandyard.model.Player;
 
 import java.util.*;
 
+/*
+ * In Node.java, we have implemented functions that helps to form connections
+ * between the parent game state to children game state.
+ */
 public class Node {
     private final int[] distances;   // distance from mrX to other points
     private final int mrXLocation;
@@ -63,7 +66,7 @@ public class Node {
         }
         List<Node> builder = new ArrayList<>();
         // finds the moves of MrX with no duplicates or nearest detective, depend on type
-        this.bestMoves = MoveModifier.BestMove(state, moves, pieceNearest, type, mrXLocation, graph);
+        this.bestMoves = MoveModifier.BestMove(state, moves, type);
         for (Move move : bestMoves) {
             Board.GameState newState = state.advance(move);
             ImmutableSet<Piece> newWinner = newState.getWinner();
