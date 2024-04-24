@@ -11,10 +11,10 @@ import uk.ac.bris.cs.scotlandyard.model.Player;
 import java.util.*;
 
 public class Node {
-    private int[] distances;   // distance from mrX to other points
-    private int mrXLocation;
-    private Node parent;  // parent node
-    private boolean type;      // type of min or max node (0: min(Detective), 1 : max(MrX))
+    private final int[] distances;   // distance from mrX to other points
+    private final int mrXLocation;
+    private final Node parent;  // parent node
+    private final boolean type;      // type of min or max node (0: min(Detective), 1 : max(MrX))
     private Piece pieceNearest;
     private ImmutableSet<Move> moves;
     private List<Move> bestMoves;
@@ -24,12 +24,13 @@ public class Node {
     public Board.GameState state;  // state of game
     public ImmutableSet<Piece> winner;
 
-    Node(Board.GameState state, boolean type, Node parent, int mrXlocation,
+    Node(Board.GameState state, boolean type, Node parent, int mrXLocation,
          int [] distances, Move move, ImmutableSet<Piece> winner)
     {
+        // initialise the node
         this.state = state;
         this.type = type;  // false: max, true: min
-        this.mrXLocation = mrXlocation;
+        this.mrXLocation = mrXLocation;
         this.parent = parent;
         this.distances = distances;
         this.winner = winner;
@@ -38,6 +39,7 @@ public class Node {
         getPieceNearest(this.state);
         this.score = Optional.empty();
 
+        // if the winner exist, then assign node values here
         if (!this.winner.isEmpty()) {
             if (this.winner.asList().get(0).isMrX()) this.score = Optional.of(999);
             else this.score = Optional.of(-999);
@@ -50,6 +52,7 @@ public class Node {
     // this returns a list of children nodes of this node
     public List<Node> addChildren(ImmutableValueGraph<Integer, Integer> graph) {
         if (this.type) {
+            // assume they all did the best move, except the nearest one.
             state = MoveModifier.moveAllExceptNearestPiece(state, distances, pieceNearest);
             winner = state.getWinner();
             // do not return children if winner appears and is not MrX
@@ -61,7 +64,6 @@ public class Node {
         List<Node> builder = new ArrayList<>();
         // finds the moves of MrX with no duplicates or nearest detective, depend on type
         this.bestMoves = MoveModifier.BestMove(state, moves, pieceNearest, type, mrXLocation, graph);
-        //System.out.println(bestMoves);
         for (Move move : bestMoves) {
             Board.GameState newState = state.advance(move);
             ImmutableSet<Piece> newWinner = newState.getWinner();
@@ -77,12 +79,15 @@ public class Node {
                 int newLocation = MoveModifier.getDestination(move);
                 builder.add(new Node(newState, !type, this, newLocation, ScoreCalculator.getDistances(graph, newLocation), move, newWinner));
             } else {
+                // this is the state after all detectives move
                 builder.add(new Node(newState, !type, this, mrXLocation, distances, move, newWinner));
             }
         }
         children = builder;
         return builder;
     }
+
+    // returns the piece that is the nearest to mrX
     private void getPieceNearest(Board.GameState state) {
         var pieces = state.getPlayers();
         int minDistance = 999;
@@ -97,17 +102,14 @@ public class Node {
         }
         pieceNearest = piece;
     }
+
+    // this is a setter that sets the score of the node
     public void setScore(int score) {
-        //if (this.score.orElse(0) != 999 && this.score.orElse(0) != -999){
             this.score = Optional.of(score);
-        //}
     }
-    public Optional<Integer> getScore() { return this.score; }
-    public boolean getType() { return this.type; }
-    public Node getParent() { return this.parent; }
-    public List<Node> getChildren() { return this.children; }
-    public Piece getNearestPiece() { return this.pieceNearest; }
-    public int[] getDistances() { return this.distances; }
+
+    // this returns the freedom of the node
+    // freedom: number of locations that MrX can get to with single move
     public int getFreedom() {
         if (this.moves == null || !this.moves.asList().get(0).commencedBy().isMrX()) return 0;
         Set<Integer> availableDestinations = new HashSet<>();
@@ -117,7 +119,11 @@ public class Node {
         return availableDestinations.size();
     }
 
-    public List<Move> getBestMoves() { return this.bestMoves;}
-
+    public Optional<Integer> getScore() { return this.score; }
+    public boolean getType() { return this.type; }
+    public Node getParent() { return this.parent; }
+    public List<Node> getChildren() { return this.children; }
+    public Piece getNearestPiece() { return this.pieceNearest; }
+    public int[] getDistances() { return this.distances; }
     public Move getMove() { return this.move; }
 }

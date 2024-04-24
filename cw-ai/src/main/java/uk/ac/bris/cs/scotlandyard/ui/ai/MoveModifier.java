@@ -17,21 +17,17 @@ public class MoveModifier {
                                                  boolean type,
                                                  int mrXLocation,
                                                  ImmutableValueGraph<Integer, Integer> graph) {
-        if (!type) return maxBestMoves(state, moves, pieceNearest, mrXLocation, graph);
-        else return minBestMoves(state);
+        if (!type) return MrXBestMoves(state, moves, pieceNearest, mrXLocation, graph);
+        else return DetectiveBestMoves(state);
     }
-    public static List<Move> maxBestMoves(Board.GameState state, ImmutableSet<Move> moves, Piece nearestPiece, int mrXLocation,
+    public static List<Move> MrXBestMoves(Board.GameState state, ImmutableSet<Move> moves, Piece nearestPiece, int mrXLocation,
                                           ImmutableValueGraph<Integer, Integer> graph) {
         // mrX choice one best move of each destination according to the ticket
         Map<Integer, Move> moveMap = new HashMap<>();
         Map<Integer, Float> costMap = new HashMap<>();
-        //if (distances[state.getDetectiveLocation((Piece.Detective) nearestPiece).orElseThrow() - 1] > 2) {
-        //    noDoubleMove = true;
-        //}
-        // System.out.println("No Double: " + noDoubleMove);
         for (Move move : moves) {
             // get cost of tickets
-            float cost = CostCalculator.maxCalculateCost(state, move);
+            float cost = CostCalculator.MrXCalculateCost(state, move);
             int destination = getDestination(move);
             if (!costMap.containsKey(destination)) {
                 costMap.put(destination, cost);
@@ -44,7 +40,7 @@ public class MoveModifier {
         return List.copyOf(moveMap.values());
     }
 
-    public static List<Move> minBestMoves(Board.GameState state) {
+    public static List<Move> DetectiveBestMoves(Board.GameState state) {
         // except one detective (The Nearest)
         // Detectives choice one best move of each destination according to the ticket
         List<Move> nearestMoves = List.copyOf(state.getAvailableMoves());
@@ -67,7 +63,7 @@ public class MoveModifier {
             for (Move move : moves) {
                 if (move.commencedBy() != d) continue;
                 int destination = getDestination(move);
-                float cost = CostCalculator.minCalculateCost(state, move);
+                float cost = CostCalculator.DetectiveCalculateCost(state, move);
                 if (!distanceMap.containsKey(destination)) {
                     // can be simplified (reduce usage of dijkstar algorithm)
                     distanceMap.put(destination, distances[destination-1]);
@@ -81,11 +77,9 @@ public class MoveModifier {
             // check
             if (distanceMap.isEmpty()) {
                 continue;
-            //    throw new RuntimeException("Impossible!");
             }
             // find min distance
             int minDistance = min(distanceMap.values());
-            // System.out.println("minDistance: " + minDistance);
             // extract all destination at that point
             List<Integer> destinations = new ArrayList<>();
             for (Map.Entry<Integer, Integer> entry : distanceMap.entrySet()) {
@@ -148,6 +142,7 @@ public class MoveModifier {
         return detectives;
     }
 
+    // use visitor pattern to separate move
     public static int getDestination(Move move) {
         return move.accept(new Move.Visitor<Integer>() {
             @Override

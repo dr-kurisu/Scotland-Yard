@@ -10,36 +10,30 @@ import java.util.*;
 
 public class Tree {
     private Set<Node> leaves;
-    private Node root;
-    private Set<Node> firstLayer;
-    private Set<Node> currentLayer;
-    private ImmutableValueGraph<Integer, Integer> distanceGraph;
-    private int count;
+    private final Node root;
     private final int depth;
     private boolean considerDouble;
-
-    Tree(Board.GameState state, int round, int depth, int mrXLocation) {
+    private final List<Integer> freedomCoef;
+    Tree(Board.GameState state, int depth, int mrXLocation, List<Integer> freedomCoef) {
         // MrX turn
         this.leaves = new HashSet<>();
-        this.currentLayer = new HashSet<>();
-        this.distanceGraph = createValueGraph(state.getSetup().graph);
         this.depth = depth;
         this.considerDouble = false;
-        this.count = 0;
+        this.freedomCoef = freedomCoef;
+        // initialise the distance graph, help to process Dijkstra algorithm
+        ImmutableValueGraph<Integer, Integer> distanceGraph = createValueGraph(state.getSetup().graph);
         // initialise root
         this.root = new Node(state, false, null, mrXLocation, ScoreCalculator.getDistances(distanceGraph, mrXLocation), null, ImmutableSet.of());
         // set current layer to root
-        this.currentLayer.add(this.root);
-
-        //this.currentLayer.addAll(root.addChildren(distanceGraph));
-        //this.firstLayer = this.currentLayer;
+        Set<Node> currentLayer = new HashSet<>();
+        currentLayer.add(this.root);
 
         // create the tree to the corresponding depth.
         for (int i = 0; i < depth; i++) {
             Set<Node> nextLayer = new HashSet<>();
             // goes through each node of next layer
             // add children nodes if no winner appears
-            for (Node node : this.currentLayer) {
+            for (Node node : currentLayer) {
                 if (node.winner.isEmpty()) {
                     var nodes = node.addChildren(distanceGraph);
                     if (nodes == null) this.leaves.add(node);
@@ -48,20 +42,26 @@ public class Tree {
                     this.leaves.add(node);
                 }
             }
-            this.currentLayer = nextLayer;
+            currentLayer = nextLayer;
         }
         // add last layer to leaves
-        this.leaves.addAll(this.currentLayer);
+        this.leaves.addAll(currentLayer);
         assignLeaves();
     }
 
-    public Integer minimax(Node node, int height, boolean isMaximizingPlayer, int alpha, int beta){
+    // minimax algorithm with alpha-beta pruning to find the max value
+    public Integer minimax(Node node, int height, boolean isMax, int alpha, int beta){
+        // return the score in node if it's a leave
         if (leaves.contains(node)) { return node.getScore().orElseThrow();}
+
         int bestValue;
         int score;
-        if (isMaximizingPlayer) {
+        if (isMax) {
+            // initialise alpha
             bestValue = -999;
+            // iterate through all children nodes
             for (Node childNode : node.getChildren()) {
+                // skip if it is not supposed to be considered
                 if (considerDouble) {
                     if (childNode.getParent() == root
                             && childNode.getMove() instanceof Move.SingleMove) { continue;}
@@ -69,21 +69,23 @@ public class Tree {
                     if (childNode.getParent() == root
                             && childNode.getMove() instanceof Move.DoubleMove) { continue;}
                 }
+                // use recursion to get to the leaves
                 score = minimax(childNode, height - 1, false, alpha, beta);
                 childNode.setScore(score);
                 bestValue = Math.max(bestValue, score);
                 alpha = Math.max(alpha, bestValue);
-                //System.out.println("bestValue = " + bestValue);
+                // break when alpha is greater or equal to beta
                 if (beta <= alpha) {break;}
             }
         } else {
+            // similar approach as above but finding minimum instead.
+            // consider double is not needed because min is always detectives move, and they
+            // don't have double moves.
             bestValue = 999;
             for (Node childNode : node.getChildren()) {
                 score = minimax(childNode, height - 1, true, alpha, beta);
                 childNode.setScore(score);
-                //System.out.print("best score: " + bestValue + "child score: " + score);
                 bestValue = Math.min(bestValue, score);
-                //System.out.println("new best score: " + bestValue);
                 beta = Math.min(beta, bestValue);
                 if (beta <= alpha) {break;}
             }
@@ -100,6 +102,8 @@ public class Tree {
             newLeaves.add(node.getParent());
         }
         leaves = newLeaves;
+        // reassign scores to the new leaves;
+        assignLeaves();
     }
 
     public void assignLeaves() {
@@ -108,30 +112,27 @@ public class Tree {
             Optional<Integer> nearestLocation = node.state.getDetectiveLocation((Piece.Detective) node.getNearestPiece());
             // check
             if (nearestLocation.isEmpty()) System.out.println("nearest location is empty");
-            //Optional<Integer> nodeScore = node.getScore();
+            // only assign scores when winner is empty
+            // otherwise will be assigned as -999 or 999 when created.
             if (node.winner.isEmpty()) {
-                int score = ScoreCalculator.getScore(node.getDistances(), node.state, restOfRoundsToReveal(node.state), nearestLocation.orElseThrow(), node.getFreedom());
+                int score = ScoreCalculator.getScore(
+                        node.getDistances(),
+                        node.state,
+                        freedomCoef.get(node.state.getMrXTravelLog().size()),
+                        nearestLocation.orElseThrow(),
+                        node.getFreedom());
                 node.setScore(score);
             }
         }
     }
 
-    public static int restOfRoundsToReveal(Board.GameState state) {
-        GameSetup setup = state.getSetup();
-        int logCounter = 0;
-        for (int i = 0; i < state.getMrXTravelLog().size() + 1; i++) {
-            if (i != 0 && setup.moves.get(i - 1)) {logCounter = 0;}
-            logCounter++;
-        }
-        return logCounter;
-    }
-
+    // this function creates the value graph of the game map given
     public static ImmutableValueGraph<Integer, Integer> createValueGraph(ImmutableValueGraph<Integer, ImmutableSet<ScotlandYard.Transport>> graph){
         MutableValueGraph<Integer, Integer> boardValueGraph = ValueGraphBuilder.undirected().build();
         // consider each node
         for (int sourceNode : graph.nodes()) {
             for (Integer destinationNode : graph.adjacentNodes(sourceNode)) {
-                // give value to each possible transport
+                // give a value of 1 to each edge
                 boardValueGraph.putEdgeValue(sourceNode, destinationNode, 1);
             }
         }
@@ -141,10 +142,7 @@ public class Tree {
     public void setConsiderDoubleToTrue() { considerDouble = true;}
     public void setConsiderDoubleToFalse() { considerDouble = false;}
     public Set<Node> getLeaves() { return this.leaves; }
-    public List<Node> getFirstLayer() { return root.getChildren(); }
-    public Set<Node> getCurrentLayer() { return this.currentLayer; }
     public int getDepth() { return this.depth; }
     public boolean getConsiderDouble() { return this.considerDouble; }
     public Node getRoot() { return this.root; }
-    public int getCount() { return this.count; }
 }

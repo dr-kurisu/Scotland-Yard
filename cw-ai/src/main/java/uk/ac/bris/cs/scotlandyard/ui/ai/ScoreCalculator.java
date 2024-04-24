@@ -14,6 +14,7 @@ public class ScoreCalculator {
         return MoveModifier.dijkstraAlgo(graph, src);
     }
 
+    // returns the total of shortest distances of detectives from MrX
     public static int calculateTotalDistance(int[] distances, Board.GameState state) {
         int result = 0;
         var pieces = state.getPlayers();
@@ -24,14 +25,12 @@ public class ScoreCalculator {
         return result;
     }
 
-    // *** tomorrow need to do : add scoring function to tree
-    public static int getScore(int[] distances, Board.GameState state, int roundsFromLastReveal, int des, int freedom) {
+    // scoring function
+    public static int getScore(int[] distances, Board.GameState state, int freedomCoef, int des, int freedom) {
         // to make this function maximum
-        // the first important thing is the nearest distance
+        // the most important thing is the nearest distance
         // the second is total distance and freedom
-        // the weight of distances[des - 1] increase while decrease of distance[des - 1]
-        // maximum weight: 100, min: 0;
-        return 2 * calculateTotalDistance(distances, state) + 70 * distances[des - 1] + 15 * roundsFromLastReveal * freedom;
-        //if (distances[des - 1] == 1) score -= 200;
+        // this weight will not exceed -999 and 999
+        return 4 * calculateTotalDistance(distances, state) + 70 * distances[des - 1] + 15 * freedomCoef * freedom;
     }
 }

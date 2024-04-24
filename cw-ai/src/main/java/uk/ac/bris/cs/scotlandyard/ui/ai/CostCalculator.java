@@ -6,7 +6,8 @@ import uk.ac.bris.cs.scotlandyard.model.Piece;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard;
 
 public class CostCalculator {
-    public static float minCalculateCost(Board.GameState state, Move move) {
+    
+    public static float DetectiveCalculateCost(Board.GameState state, Move move) {
         var tickets = move.tickets();
         float cost = 0;
         Board.TicketBoard tb = state.getPlayerTickets(move.commencedBy()).orElseThrow();
@@ -25,7 +26,8 @@ public class CostCalculator {
         }
         return cost;
     }
-    public static float maxCalculateCost(Board.GameState state, Move move) {
+
+    public static float MrXCalculateCost(Board.GameState state, Move move) {
         // calulate cost of tickets for mrX
         var tickets = move.tickets();
         float cost = 0;
